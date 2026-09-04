@@ -5,23 +5,38 @@
             @csrf
             <div>
                 <label class="block mb-1 font-medium">Kode Mata Kuliah</label>
-                <input type="text" name="code" class="w-full border rounded p-2" placeholder="SI2514027" required>
+                <input type="text" name="code" value="{{ old('code') }}" class="w-full border rounded p-2" placeholder="SI2514027" required>
+                @error('code')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block mb-1 font-medium">Nama Mata Kuliah</label>
-                <input type="text" name="name" class="w-full border rounded p-2" placeholder="Pemrograman Web Lanjut" required>
+                <input type="text" name="name" value="{{ old('name') }}" class="w-full border rounded p-2" placeholder="Pemrograman Web Lanjut" required>
+                @error('name')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block mb-1 font-medium">SKS</label>
-                <input type="number" name="sks" class="w-full border rounded p-2" placeholder="3" required>
+                <input type="number" name="sks" value="{{ old('sks') }}" class="w-full border rounded p-2" placeholder="3" required>
+                @error('sks')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block mb-1 font-medium">Dosen Pengampu</label>
-                <input type="text" name="lecturer" class="w-full border rounded p-2" placeholder="Nama Dosen" required>
+                <input type="text" name="lecturer" value="{{ old('lecturer') }}" class="w-full border rounded p-2" placeholder="Nama Dosen" required>
+                @error('lecturer')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <label class="block mb-1 font-medium">Deskripsi</label>
-                <textarea name="description" class="w-full border rounded p-2" rows="3"></textarea>
+                <textarea name="description" class="w-full border rounded p-2" rows="3">{{ old('description') }}</textarea>
+                @error('description')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
             <div class="flex justify-end space-x-2">
                 <a href="{{ route('courses.index') }}" class="px-4 py-2 border rounded">Batal</a>

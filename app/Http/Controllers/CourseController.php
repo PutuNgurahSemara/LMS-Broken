@@ -38,7 +38,16 @@ class CourseController extends Controller
 
     public function index()
     {
-        return view('courses.index', ['courses' => $this->courses]);
+        // SEBELUMNYA SALAH: filter status 'active' dilakukan di dalam
+        // view (index.blade.php) pakai array_filter() di dalam @php ... @endphp.
+        // -> View seharusnya cuma menampilkan data, bukan memprosesnya.
+        // PERBAIKAN: logika filter dipindah ke sini (controller).
+        $courses = collect($this->courses)
+            ->where('status', 'active')
+            ->values()
+            ->all();
+
+        return view('courses.index', ['courses' => $courses]);
     }
 
     public function create()
@@ -46,17 +55,40 @@ class CourseController extends Controller
         return view('courses.create');
     }
 
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'code'        => 'required|string|max:20',
+            'name'        => 'required|string|max:255',
+            'sks'         => 'required|integer|min:1|max:6',
+            'lecturer'    => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        // Di aplikasi nyata, simpan ke database di sini (Eloquent/Model).
+        // Karena data masih berupa array statis (belum ada DB/model),
+        // contoh ini hanya redirect kembali dengan pesan sukses.
+
+        return redirect()->route('courses.index')
+            ->with('success', 'Mata kuliah berhasil ditambahkan');
+    }
+
     public function show($id)
     {
         $course = collect($this->courses)->firstWhere('id', (int) $id);
+
         if (!$course) {
             abort(404);
         }
+
         return view('courses.show', compact('course'));
     }
 
     public function destroy($id)
     {
-        return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus');
+        // Di aplikasi nyata, hapus data dari database di sini.
+
+        return redirect()->route('courses.index')
+            ->with('success', 'Mata kuliah berhasil dihapus');
     }
 }

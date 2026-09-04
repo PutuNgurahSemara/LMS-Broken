@@ -2,11 +2,16 @@
     <div class="bg-white p-6 rounded shadow">
         <h1 class="text-3xl font-bold mb-2">{{ $course['name'] }} ({{ $course['code'] }})</h1>
         <p class="text-gray-600 mb-4">Dosen Pengampu: {{ $course['lecturer'] }} | SKS: {{ $course['sks'] }}</p>
-        
+
         <div class="border-t pt-4">
             <h2 class="text-xl font-semibold mb-2">Deskripsi Mata Kuliah</h2>
             <div class="prose">
-                {!! $course['description'] !!}
+                {{-- SEBELUMNYA SALAH: {!! $course['description'] !!}
+                     -> Pakai {!! !!} (unescaped output), jadi kalau field
+                     description berisi <script>...</script>, kode itu akan
+                     benar-benar dieksekusi di browser (celah XSS).
+                     PERBAIKAN: ganti jadi {{ }} supaya HTML/JS di-escape. --}}
+                {{ $course['description'] }}
             </div>
         </div>
 
