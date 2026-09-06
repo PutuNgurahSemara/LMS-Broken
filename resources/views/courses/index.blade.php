@@ -4,11 +4,11 @@
         <a href="{{ route('courses.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded">Tambah Mata Kuliah</a>
     </div>
 
-    @php
+    <!--@php
         $activeCourses = array_filter($courses, function($c) {
             return $c['status'] === 'active';
         });
-    @endphp
+    @endphp Kode yang seharusnya di controller -->
 
     <table class="w-full bg-white rounded shadow overflow-hidden">
         <thead class="bg-gray-200 text-left">
@@ -25,15 +25,19 @@
             <tr class="border-b">
                 <td class="p-3">{{ $course['code'] }}</td>
                 <td class="p-3">
-                    <a href="/courses/{{ $course['id'] }}" class="text-blue-600 font-semibold hover:underline">
-                        {{ $course['name'] }}
+                <!-- <a href="/courses/{{ $course['id'] }}//kode sebelum diperbaiki--> 
+
+                     <a href="{{ route('courses.show', $course['id']) }}" class="text-blue-600 font-semibold hover:underline">
+                         {{ $course['name'] }}
                     </a>
                 </td>
                 <td class="p-3">{{ $course['sks'] }}</td>
                 <td class="p-3">{{ $course['lecturer'] }}</td>
                 <td class="p-3 space-x-2">
-                    <a href="/courses/{{ $course['id'] }}" class="text-gray-600 hover:underline">Detail</a>
-                    <a href="/courses/{{ $course['id'] }}/delete" class="text-red-600 hover:underline" onclick="return confirm('Hapus?')">Hapus</a>
+                    <!-- <a href="/courses/{{ $course['id'] }}///kode sebelum diperbaiki-->
+                    <a href="{{ route('courses.show', $course['id']) }}" class="text-gray-600 hover:underline">Detail</a>
+                   <!-- <a href="/courses/{{ $course['id'] }}///kode sebelum diperbaiki -->
+                    <a href="{{ route('courses.show', $course['id']) }}/delete" class="text-red-600 hover:underline" onclick="return confirm('Hapus?')">Hapus</a>
                 </td>
             </tr>
             @endforeach
