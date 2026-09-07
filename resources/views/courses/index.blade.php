@@ -19,7 +19,7 @@
             <tr class="border-b">
                 <td class="p-3">{{ $course['code'] }}</td>
                 <td class="p-3">
-                    <a href="/courses/{{ $course['id'] }}" class="text-blue-600 font-semibold hover:underline">
+                    <a href="{{ route('courses.show', $course['id']) }}" class="text-blue-600 font-semibold hover:underline">
                         {{ $course['name'] }}
                     </a>
                 </td>
