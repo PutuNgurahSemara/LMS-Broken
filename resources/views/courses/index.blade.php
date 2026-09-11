@@ -34,7 +34,11 @@
                     </form>
                 </td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="5" class="p-4 text-center text-gray-500">Belum ada data mata kuliah.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </x-layout>
