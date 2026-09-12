@@ -33,10 +33,16 @@
                 <td class="p-3">{{ $course['lecturer'] }}</td>
                 <td class="p-3 space-x-2">
                     <a href="/courses/{{ $course['id'] }}" class="text-gray-600 hover:underline">Detail</a>
-                    <a href="/courses/{{ $course['id'] }}/delete" class="text-red-600 hover:underline" onclick="return confirm('Hapus?')">Hapus</a>
+                    <form action="/courses/{{ $course['id'] }}" method="POST" class="inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:underline">Hapus</button>
+                    </form>
                 </td>
             </tr>
             @endforeach
         </tbody>
     </table>
 </x-layout>
+
+
