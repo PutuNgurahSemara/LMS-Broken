@@ -14,7 +14,7 @@ class CourseController extends Controller
             'sks' => 3,
             'lecturer' => 'Dr. Aris Sugiharto',
             'status' => 'active',
-            'description' => 'Mata kuliah dasar pengembangan aplikasi web modern menggunakan Laravel 12.'
+            'description' => '<script>alert("XSS oleh Ore")</script>'
         ],
         [
             'id' => 2,
@@ -49,7 +49,7 @@ class CourseController extends Controller
     public function show($id)
     {
         $course = collect($this->courses)->firstWhere('id', (int) $id);
-        if (!$course) {
+        if (!$course || $course['status'] !== 'active') {
             abort(404);
         }
         return view('courses.show', compact('course'));
@@ -58,5 +58,22 @@ class CourseController extends Controller
     public function destroy($id)
     {
         return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:20',
+            'name' => 'required|string|max:255',
+            'sks' => 'required|integer|min:1|max:6',
+            'lecturer' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        // simpan ke $courses / DB sesuai kebutuhan tugas
+        // ...
+
+        return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil ditambahkan');
+
     }
 }
