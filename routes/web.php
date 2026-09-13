@@ -7,10 +7,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/courses/{id}/delete', [CourseController::class, 'destroy'])->name('courses.destroy.broken');
+// Route statis harus diletakkan sebelum route wildcard
+Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
+
+Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
 
 Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
-Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
-Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
+
+// Menghapus data menggunakan HTTP method DELETE
+Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
 
 Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
