@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('materials', function (Blueprint $table) {
             $table->id();
             $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
+            $table->foreignId('uploaded_by')->constrained('users')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('type', ['file', 'link']);
@@ -26,5 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::dropIfExists('materials');
     }
 };
