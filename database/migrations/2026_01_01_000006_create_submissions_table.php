@@ -16,6 +16,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamp('submitted_at');
             $table->timestamps();
+            $table->unique(['assignment_id', 'user_id']);
         });
     }
 
