@@ -20,9 +20,16 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        User::create($request->all());
-
-        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan');
+        $validated = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required',
+            'nim_nip' => 'nullable',
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+        User::create($validated);
+        return redirect()->route('users.index')
+            ->with('success', 'User berhasil ditambahkan');
     }
 
     public function show(User $user)
@@ -37,9 +44,16 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $user->update($request->all());
-
-        return redirect()->route('users.index')->with('success', 'User berhasil diperbarui');
+        $validated = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable',
+            'nim_nip' => 'nullable',
+            'role' => 'required|in:admin,dosen,mahasiswa',
+        ]);
+        $user->update($validated);
+        return redirect()->route('users.index')
+            ->with('success', 'User berhasil diperbarui');
     }
 
     public function destroy(User $user)

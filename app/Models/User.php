@@ -10,7 +10,13 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'nim_nip',
+        'role',
+    ];
 
     protected function casts(): array
     {
