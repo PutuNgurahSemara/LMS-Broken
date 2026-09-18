@@ -21,10 +21,14 @@ return new class extends Migration
             $table->string('mime_type')->nullable();
             $table->string('external_url')->nullable();
             $table->timestamps();
+            // PERBAIKAN 1: Unique Composite untuk judul materi
+            $table->unique(['course_id', 'title']);
         });
     }
-
+    
+    // PERBAIKAN 2: Mengisi fungsi down() untuk rollback
     public function down(): void
     {
+        Schema::dropIfExists('materials');
     }
 };
