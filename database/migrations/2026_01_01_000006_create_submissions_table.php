@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('submissions', function (Blueprint $table) {
+         Schema::create('submissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('assignment_id')->constrained('assignments')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -16,6 +16,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamp('submitted_at');
             $table->timestamps();
+
+            $table->unique(['assignment_id', 'user_id']);
         });
     }
 
