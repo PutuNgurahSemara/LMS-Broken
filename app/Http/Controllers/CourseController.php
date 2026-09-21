@@ -5,27 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->has('search')) {
-            session(['course_search' => $request->search]);
-        }
-        if ($request->has('status')) {
-            session(['course_status' => $request->status]);
-        }
-
-        $search = session('course_search');
-        $status = session('course_status', 'active');
+    // MASALAH 3 NIHH: Filter tidak lagi disimpan di session. Search dan status langsung diambil dari query parameter URL.
+        $search = $request->input('search');
+        $status = $request->input('status', 'active');
 
         $query = Course::with('lecturer')->withCount('students');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
-                  ->orWhere('code', 'like', '%'.$search.'%');
+                    ->orWhere('code', 'like', '%'.$search.'%');
             });
         }
 
@@ -33,7 +28,8 @@ class CourseController extends Controller
             $query->where('status', $status);
         }
 
-        $courses = $query->paginate(10);
+        // MASALAH 4 NIHH: Mempertahankan query string search dan status saat berpindah halaman pagination.
+        $courses = $query->paginate(10)->withQueryString();
 
         return view('courses.index', compact('courses'));
     }
@@ -47,18 +43,22 @@ class CourseController extends Controller
 
     public function store(Request $request)
     {
-        Course::create([
-            'code' => $request->code,
-            'name' => $request->name,
-            'description' => $request->description,
-            'sks' => $request->sks,
-            'lecturer_id' => $request->lecturer_id,
-            'status' => $request->status ?? 'draft',
+        // MASALAH 1 NIHH: validasi dilakukan di backend agar data yang masuk ke database tetap aman
+        $validated = $request->validate([
+            'code' => 'required|string|max:20|unique:courses,code',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'sks' => 'required|integer|min:1|max:6',
+            'lecturer_id' => 'required|exists:users,id',
+            'status' => 'required|in:draft,active,archived',
         ]);
 
-        $courses = Course::paginate(10);
+        Course::create($validated);
 
-        return view('courses.index', compact('courses'));
+        // MASALAH 5 NIHH: Setelah data berhasil disimpan, lakukan redirect ke halaman daftar. Hal ini mencegah halaman hasil POST di-refresh dan dikirim ulang.
+        return redirect()
+            ->route('courses.index')
+            ->with('success', 'Mata kuliah berhasil ditambahkan.');
     }
 
     public function show(Course $course)
@@ -77,8 +77,14 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
+        // MASALAH 2 NIHH: Validasi unique harus mengabaikan course yang sedang diedit. Tanpa ignore(), kode milik sendiri dianggap sudah digunakan.
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:courses,code',
+            'code' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('courses', 'code')->ignore($course->id),
+            ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'sks' => 'required|integer|min:1|max:6',
@@ -88,7 +94,8 @@ class CourseController extends Controller
 
         $course->update($validated);
 
-        return redirect()->route('courses.show', $course)->with('success', 'Mata kuliah berhasil diperbarui.');
+        return redirect()->route('courses.show', $course)
+            ->with('success', 'Mata kuliah berhasil diperbarui.');
     }
 
     public function destroy(Course $course)
