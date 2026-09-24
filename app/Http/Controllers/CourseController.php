@@ -10,15 +10,20 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
+        /*
         if ($request->has('search')) {
             session(['course_search' => $request->search]);
         }
         if ($request->has('status')) {
             session(['course_status' => $request->status]);
         }
+        kode sebelum perbaikan */
 
+        /*
         $search = session('course_search');
         $status = session('course_status', 'active');
+        kode sebelum perbaikan*/
+
 
         $query = Course::with('lecturer')->withCount('students');
 
@@ -29,13 +34,24 @@ class CourseController extends Controller
             });
         }
 
-        if ($status) {
+       /* if ($status) {
             $query->where('status', $status);
         }
+        kode sebelum perbaikan */
 
-        $courses = $query->paginate(10);
+        if ($request->filled('status')) {
+        $query->where('status', $request->status); //kode setelah perbaikan
+    }
 
-        return view('courses.index', compact('courses'));
+        // $courses = $query->paginate(10); kode sebelum perbaikan
+
+        $courses = $query->paginate(10)->withQueryString(); //kode setelah perbaikan
+
+        // return view('courses.index', compact('courses')); kode sebelum perbaikan
+
+         return redirect()
+        ->route('courses.index')
+        ->with('success', 'Mata kuliah berhasil ditambahkan.'); //kode setelah perbaikan
     }
 
     public function create()
@@ -47,7 +63,8 @@ class CourseController extends Controller
 
     public function store(Request $request)
     {
-        Course::create([
+        //Course::create([ kode seblum perbaikan
+         $validated = $request->validate([ //kode setelah perbaikan
             'code' => $request->code,
             'name' => $request->name,
             'description' => $request->description,
@@ -56,10 +73,27 @@ class CourseController extends Controller
             'status' => $request->status ?? 'draft',
         ]);
 
-        $courses = Course::paginate(10);
+        // $courses = Course::paginate(10); kode salah
+        Course::create($validated); // kode benar
 
-        return view('courses.index', compact('courses'));
-    }
+        $query = Course::with('lecturer')->withCount('students');
+
+         if ($request->filled('search')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('name', 'like', '%'.$request->search.'%')
+              ->orWhere('code', 'like', '%'.$request->search.'%');
+         });
+        }
+
+        if ($request->filled('status')) {
+        $query->where('status', $request->status);
+        }
+
+    $courses = $query->paginate(10)->withQueryString();
+
+    return view('courses.index', compact('courses'));
+}
+
 
     public function show(Course $course)
     {
@@ -77,7 +111,7 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
-        $validated = $request->validate([
+        /* $validated = $request->validate([
             'code' => 'required|string|max:20|unique:courses,code',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -85,7 +119,22 @@ class CourseController extends Controller
             'lecturer_id' => 'required|exists:users,id',
             'status' => 'required|in:draft,active,archived',
         ]);
+        kode sebelum perbaikan */ 
 
+       $validated = $request->validate([
+        'code' => [
+            'required',
+            'string',
+            'max:20',
+            Rule::unique('courses', 'code')->ignore($course->id),
+        ],
+        'name'        => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'sks'         => 'required|integer|min:1|max:6',
+        'lecturer_id' => 'required|exists:users,id',
+        'status'      => 'required|in:draft,active,archived',
+    ]); // kode setelah perbaikan
+ 
         $course->update($validated);
 
         return redirect()->route('courses.show', $course)->with('success', 'Mata kuliah berhasil diperbarui.');
