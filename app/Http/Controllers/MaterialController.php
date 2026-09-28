@@ -13,7 +13,7 @@ class MaterialController extends Controller
 {
     public function store(Request $request, Course $course)
     {
-        Gate::authorize('create', Material::class);
+        Gate::authorize('create', [Material::class, $course]);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -56,6 +56,8 @@ class MaterialController extends Controller
 
     public function download(Material $material)
     {
+        Gate::authorize('download', $material);
+
         if ($material->type !== 'file' || ! $material->file_path || ! Storage::disk('local')->exists($material->file_path)) {
             abort(404, 'Berkas materi tidak ditemukan.');
         }

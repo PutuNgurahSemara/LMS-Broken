@@ -85,6 +85,7 @@
                         <div class="font-semibold text-gray-900 text-sm">{{ $material->title }}</div>
                         <p class="text-xs text-gray-500 mt-0.5">{{ $material->description }}</p>
                     </div>
+
                     <div class="flex items-center space-x-2">
                         @if($material->type === 'file')
                         <a href="{{ route('materials.download', $material) }}" class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-md hover:bg-blue-200">
@@ -97,7 +98,15 @@
                         @endif
 
                         @can('delete', $material)
-                        <a href="{{ route('materials.destroy', $material) }}" onclick="return confirm('Hapus materi ini?')" class="text-red-600 text-xs hover:underline">Hapus</a>
+                        <form action="{{ route('materials.destroy', $material) }}" method="POST"
+                              onsubmit="return confirm('Hapus materi ini?')">
+                            @csrf
+                            @method('DELETE')
+
+                            <button type="submit" class="text-red-600 text-xs hover:underline">
+                                Hapus
+                            </button>
+                        </form>
                         @endcan
                     </div>
                 </div>
