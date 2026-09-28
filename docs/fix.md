@@ -14,15 +14,15 @@ Urutan file yang benar
 
 ### - `onDelete` keliru ( Putri Kelompok A-08)
 
-`cascadeOnDelete();` kode ini keliru karena jika data induk (data dosen) di hapus maka data anak (data matakuliah) yang terhubung akan otomatis ikut terhapus secara permanen dari database, disini relasi antara dosen dan mata kuliah diatur menggunakan cascade. Akibatnya jika ada data dosen yang dihapus makah seluruh mata kuliah yang di ampu dosen tersebut akan ikut terhapus. Perbaikan nya adalah mengganti menjadi `nullOnDelete`, sehingga jika akun dosen di hapus, data mata kuliah tetap aman dan tersimpan dan nama kolom dosen akan berubah menjadi `null`. Setelah perbaikan, Jika data dosen dihapus, maka data mata kuliah tetap aman tersimpan di database dan nilai kolom `lecturer_id` otomatis berubah menjadi NULL (kosong).
+Pada file `2026_01_01_000004_create_materials_table.php`, relasi foreign key pada kolom `uploaded_by` sebelumnya menggunakan `cascadeOnDelete()` (atau terhapus secara permanen saat akun di-delete). Akibatnya, jika akun dosen/pengunggah dihapus dari sistem, seluruh materi kuliah yang diunggah oleh dosen tersebut akan otomatis ikut terhapus secara permanen dari database. Perbaikannya adalah mengubah kolom `uploaded_by` menjadi `nullable()` dan menerapkan `nullOnDelete()`. Dengan begitu, jika akun dosen pengunggah dihapus, file/materi pembelajaran tetap aman tersimpan di database dan nilai kolom uploaded_by otomatis berubah menjadi NULL
 
 Kode sebelum perbaikan 
 ```
-$table->foreignId('lecturer_id')->constrained('users')->cascadeOnDelete();
+$table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
 ```
 Kode setelah perbaikan
 ```
-$table->foreignId('lecturer_id')->nullable()->constrained('users')->nullOnDelete();
+$table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
 ```
 
 ### - unique composite hilang ( Sarah Kelompok A-08 )
@@ -61,54 +61,46 @@ Kode setelah perbaikan
     }
 ```
 
-- Pada file `2026_01_01_000004_create_materials_table.php` Unique composite hilang, sehingga dosen bisa mengunggah dua materi dengan judul yang sama persis di dalam satu mata kuliah sehingga memicu duplikasi data di database. Kode di dalam fungsi down() yang kosongakan menyebabkan proses pembatalan migrasi (rollback) akan gagal atau tidak berdampak apa-apa saat dijalankan lewat terminal. Tambahkan perintah `Schema::dropIfExists('materials');` pada fungsi `down()`. Setelah itu, Perintah  php artisan migrate:fresh dapat menghapus tabel materials dengan bersih tanpa terhenti error.
+- Pada file `2026_01_01_000006_create_submissions_table.php`aturan unique composite sempat terlewat dan belum ditambahkan. Tanpa aturan ini, mahasiswa (user_id) bisa mengumpulkan file tugas (assignment_id) yang sama secara berulang kali sehingga menimbulkan duplikasi data di database.   Perbaikannya adalah menambahkan $table->unique(['assignment_id', 'user_id']); di dalam method up() pada pembuatan tabel submissions. Kode ini memastikan bahwa satu mahasiswa hanya dapat memiliki satu data pengumpulan untuk setiap tugas
 
 **unique composite yang hilang**
 
 Kode sebelum perbaikan 
 ```
 public function up(): void
-    {
-        Schema::create('materials', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->enum('type', ['file', 'link']);
-            $table->string('file_path')->nullable();
-            $table->string('original_name')->nullable();
-            $table->unsignedBigInteger('file_size')->nullable();
-            $table->string('mime_type')->nullable();
-            $table->string('external_url')->nullable();
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('submissions', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('assignment_id')->constrained('assignments')->cascadeOnDelete();
+        $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->string('file_path')->nullable();
+        $table->text('notes')->nullable();
+        $table->timestamp('submitted_at');
+        $table->timestamps();
+    });
+}
 ```
 
 Kode setelah perbaikan 
 
 ```
  public function up(): void
-    {
-        Schema::create('materials', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->enum('type', ['file', 'link']);
-            $table->string('file_path')->nullable();
-            $table->string('original_name')->nullable();
-            $table->unsignedBigInteger('file_size')->nullable();
-            $table->string('mime_type')->nullable();
-            $table->string('external_url')->nullable();
-            $table->timestamps();
-            //Unique Composite untuk judul materi
-            $table->unique(['course_id', 'title']);
-        });
-    }
+{
+    Schema::create('submissions', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('assignment_id')->constrained('assignments')->cascadeOnDelete();
+        $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->string('file_path')->nullable();
+        $table->text('notes')->nullable();
+        $table->timestamp('submitted_at');
+        $table->timestamps();
+
+        // PERBAIKAN: Mencegah mahasiswa mengumpulkan tugas yang sama berkali-kali
+        $table->unique(['assignment_id', 'user_id']);
+    });
+}
 ```
+- Pada file `2026_01_01_000004_create_materials_table.php` Unique composite hilang, sehingga dosen bisa mengunggah dua materi dengan judul yang sama persis di dalam satu mata kuliah sehingga memicu duplikasi data di database. Kode di dalam fungsi down() yang kosongakan menyebabkan proses pembatalan migrasi (rollback) akan gagal atau tidak berdampak apa-apa saat dijalankan lewat terminal. Tambahkan perintah `Schema::dropIfExists('materials');` pada fungsi `down()`. Setelah itu, Perintah  php artisan migrate:fresh dapat menghapus tabel materials dengan bersih tanpa terhenti error
 
 **Mengisi fungsi down() untuk rollback**
 
@@ -117,7 +109,6 @@ Kode sebelum perbaikan
  public function down(): void
     {
     }
-};
 ```
 
 Kode setelah perbaikan
@@ -127,7 +118,6 @@ Kode setelah perbaikan
     {
         Schema::dropIfExists('materials');
     }
-};
 ```
 
 ### - $guarded = [] ( Fatim Kelompok A-08 )
