@@ -11,7 +11,9 @@ return new class extends Migration
         Schema::create('materials', function (Blueprint $table) {
             $table->id();
             $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
-            $table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
+            
+            // REVISI POIN 4
+            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('type', ['file', 'link']);
@@ -21,10 +23,15 @@ return new class extends Migration
             $table->string('mime_type')->nullable();
             $table->string('external_url')->nullable();
             $table->timestamps();
+
+            // PERBAIKAN 1
+            $table->unique(['course_id', 'title']);
         });
     }
 
+    // PERBAIKAN 2 
     public function down(): void
     {
+        Schema::dropIfExists('materials');
     }
 };

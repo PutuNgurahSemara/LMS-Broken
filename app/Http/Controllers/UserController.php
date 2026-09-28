@@ -18,9 +18,19 @@ class UserController extends Controller
         return view('users.create');
     }
 
+    // BAHAYA: Mengambil seluruh input tanpa disaring/divalidasi
+    // User::create($request->all());
     public function store(Request $request)
     {
-        User::create($request->all());
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'role'     => 'required|in:student,lecturer,admin',
+        ]);
+
+       
+        User::create($validated);
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan');
     }
@@ -37,7 +47,21 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $user->update($request->all());
+
+    // BAHAYA: Mengambil seluruh input tanpa disaring/divalidasi
+    // User::create($request->all());
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|min:8',
+            'role'     => 'required|in:student,lecturer,admin',
+        ]);
+
+        if (empty($validated['password'])) {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
 
         return redirect()->route('users.index')->with('success', 'User berhasil diperbarui');
     }
@@ -48,4 +72,4 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus');
     }
-}
+} 
