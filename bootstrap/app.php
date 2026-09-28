@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Bug 5 FIX: RoleMiddleware didaftarkan di bootstrap/app.php (bukan di Kernel.php)
+        // Laravel 12 menggunakan bootstrap/app.php sebagai titik konfigurasi middleware.
+        // Sebelumnya alias 'role' hanya ada di Kernel.php yang sudah deprecated dan tidak dibaca Laravel 12.
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

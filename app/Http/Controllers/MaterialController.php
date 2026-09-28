@@ -56,6 +56,11 @@ class MaterialController extends Controller
 
     public function download(Material $material)
     {
+        // Bug 3 FIX: Tambahkan Gate::authorize() untuk mencegah IDOR
+        // Sebelumnya tidak ada pengecekan otorisasi — siapapun (termasuk yang tidak enroll)
+        // bisa mengunduh materi milik course lain dengan menebak ID (Insecure Direct Object Reference).
+        Gate::authorize('view', $material);
+
         if ($material->type !== 'file' || ! $material->file_path || ! Storage::disk('local')->exists($material->file_path)) {
             abort(404, 'Berkas materi tidak ditemukan.');
         }

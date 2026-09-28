@@ -19,14 +19,20 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+// Bug 1 FIX: Route courses.show dipindahkan ke dalam grup middleware 'auth'
+// Sebelumnya berada di luar grup sehingga bisa diakses tanpa login
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.index');
-    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.index');
+    // Bug 1 FIX: courses.show sekarang berada di dalam grup auth
+    Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+
+    // Bug 6 FIX: Nama route courses.index yang bentrok antar peran diperbaiki
+    // Sebelumnya: dua route berbeda sama-sama bernama 'courses.index'
+    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.lecturer.index');
+    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.student.index');
     Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
     Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
@@ -35,10 +41,16 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('materials.store');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
-    Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');
+    // Bug 7 FIX: Route destruktif diganti dari Route::get ke Route::delete
+    // Sebelumnya: Route::get('/materials/{material}/delete', ...) — operasi hapus tidak boleh pakai GET
+    Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
     Route::post('/courses/{course}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
-    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+    // Bug 4 FIX: Tambah scopeBindings() agar {assignment} divalidasi benar-benar milik {course}
+    // Tanpa ini, user bisa akses /courses/1/assignments/999 meski assignment 999 bukan milik course 1
+    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])
+        ->name('assignments.show')
+        ->scopeBindings();
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
     Route::post('/assignments/{assignment}/submissions', [SubmissionController::class, 'store'])->name('submissions.store');

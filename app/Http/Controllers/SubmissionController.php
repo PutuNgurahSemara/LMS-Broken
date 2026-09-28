@@ -51,6 +51,11 @@ class SubmissionController extends Controller
 
     public function download(Submission $submission)
     {
+        // Bug 2 FIX: Tambahkan Gate::authorize() untuk mencegah IDOR
+        // Sebelumnya tidak ada pengecekan otorisasi — siapapun bisa download submission milik orang lain
+        // dengan menebak ID submission (Insecure Direct Object Reference).
+        Gate::authorize('view', $submission);
+
         if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }
