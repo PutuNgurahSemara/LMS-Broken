@@ -11,8 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Masalah 5: Middleware didaftarkan di berkas yang salah.
+    // Perbaikan: alias middleware dipindahkan ke bootstrap/app.php yang sebelumnya ditempatkan di App/Http/Kernel.php.
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias(['role' => \App\Http\Middleware\RoleMiddleware::class,]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

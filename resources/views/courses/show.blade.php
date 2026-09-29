@@ -95,9 +95,16 @@
                             Buka Link
                         </a>
                         @endif
-
+                    
                         @can('delete', $material)
-                        <a href="{{ route('materials.destroy', $material) }}" onclick="return confirm('Hapus materi ini?')" class="text-red-600 text-xs hover:underline">Hapus</a>
+                        <form action="{{ route('materials.destroy', $material) }}" method="POST" class="inline"
+                            onsubmit="return confirm('Hapus materi ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 text-xs hover:underline">
+                                Hapus
+                            </button>
+                        </form>
                         @endcan
                     </div>
                 </div>

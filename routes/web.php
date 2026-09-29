@@ -19,14 +19,19 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
-
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.index');
-    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.index');
+    // Masalah 1: Route di luar grup auth
+    // Sebelum Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+    //perbaikan masalah 1, memindahkan route show course ke dalam grup auth
+    Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+
+    // Masalah 6: Nama route bentrok antar peran.
+    // sebelumnya dibuat route dengan nama yang sama untuk dosen dan mahasiswa, sehingga menyebabkan bentrok.
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+
     Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
     Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
@@ -35,10 +40,18 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('materials.store');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
-    Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');
+
+    // Masalah 7: Route destruktif menggunakan GET
+    // sebelum // Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');
+    // Perbaikan: operasi hapus menggunakan HTTP DELETE.
+    Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
     Route::post('/courses/{course}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
-    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+
+    // Masalah 4: Nested route tanpa scopeBindings
+    // Perbaikan: memastikan assignment terikat dengan course yang sesuai.
+    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->scopeBindings()->name('assignments.show');
+
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
     Route::post('/assignments/{assignment}/submissions', [SubmissionController::class, 'store'])->name('submissions.store');

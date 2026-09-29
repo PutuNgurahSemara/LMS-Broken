@@ -56,6 +56,10 @@ class MaterialController extends Controller
 
     public function download(Material $material)
     {
+        //Masalah 3:IDOR pada material.
+        // Sebelumnya tidak ada Gate::authorize('download', $material); pengecekan hak akses, sehingga user dapat mengakses materi milik user lain.
+        Gate::authorize('download', $material);
+
         if ($material->type !== 'file' || ! $material->file_path || ! Storage::disk('local')->exists($material->file_path)) {
             abort(404, 'Berkas materi tidak ditemukan.');
         }
