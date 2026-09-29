@@ -19,14 +19,18 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+// Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');, masalahnya route detail course berada di luar auth, jadi belum login pun bisa mengaksesnya, jadi route tsb dipindahkan ke dalam group auth.
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.index');
-    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.index');
+    Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
+
+    // Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.index');
+    // Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.index');, nama route dosen dan mahasiswa bentrok keduanya punya nama courses.index
+    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:admin,dosen')->name('courses.lecturer.index');
+    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.student.index');
     Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
     Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
     Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
@@ -35,10 +39,12 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('materials.store');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
-    Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');
+    // Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');, route delete material masih GET, karena destroy adalah operasi menghapus data, seharusnya pakai HTTP DELETE, bukan GET
+    Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
     Route::post('/courses/{course}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
-    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+    // Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');, Nested route tanpa scopeBindings(), scopeBindings() membuat {assignment} mengikuti relasi {course}, jadi assignment dari course lain gabisa dimasukkan begitu saja ke URL tsb
+    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->scopeBindings()->name('assignments.show');
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
     Route::post('/assignments/{assignment}/submissions', [SubmissionController::class, 'store'])->name('submissions.store');

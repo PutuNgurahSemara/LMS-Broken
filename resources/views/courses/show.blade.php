@@ -13,9 +13,18 @@
             </div>
 
             <div class="flex items-center space-x-3">
-                <a href="{{ route('courses.index') }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                <!-- <a href="{{ route('courses.index') }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
                     &larr; Kembali
-                </a>
+                </a> -->
+                @if(auth()->user()->role === 'mahasiswa')
+                    <a href="{{ route('courses.student.index') }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                        &larr; Kembali
+                    </a>
+                @else
+                    <a href="{{ route('courses.lecturer.index') }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                        &larr; Kembali
+                    </a>
+                @endif
                 @can('update', $course)
                 <a href="{{ route('courses.edit', $course) }}" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">
                     Edit
@@ -96,8 +105,17 @@
                         </a>
                         @endif
 
-                        @can('delete', $material)
+                        <!-- @can('delete', $material)
                         <a href="{{ route('materials.destroy', $material) }}" onclick="return confirm('Hapus materi ini?')" class="text-red-600 text-xs hover:underline">Hapus</a>
+                        @endcan -->
+                        @can('delete', $material)
+                        <form action="{{ route('materials.destroy', $material) }}" method="POST" onsubmit="return confirm('Hapus materi ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 text-xs hover:underline">
+                                Hapus
+                            </button>
+                        </form>
                         @endcan
                     </div>
                 </div>

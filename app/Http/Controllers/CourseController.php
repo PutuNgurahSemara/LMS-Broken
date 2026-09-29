@@ -58,7 +58,8 @@ class CourseController extends Controller
 
         Course::create($validated);
 
-        return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil ditambahkan.');
+        //return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil ditambahkan.');
+        return redirect()->route('courses.lecturer.index')->with('success', 'Mata kuliah berhasil ditambahkan.');
     }
 
     public function show(Course $course)
@@ -103,6 +104,7 @@ class CourseController extends Controller
 
         $course->delete();
 
-        return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus.');
+        // return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus.');
+        return redirect()->route('courses.lecturer.index')->with('success', 'Mata kuliah berhasil dihapus.');
     }
 }

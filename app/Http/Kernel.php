@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
-    protected $middlewareAliases = [
-        'role' => \App\Http\Middleware\RoleMiddleware::class,
-    ];
+    // protected $middlewareAliases = [
+    //     'role' => \App\Http\Middleware\RoleMiddleware::class,
+    // ]; dihapus karena middleware role didaftarkan di bootstrap/app.php, bukan di Kernel.php.
 }
