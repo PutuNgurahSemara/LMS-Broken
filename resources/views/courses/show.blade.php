@@ -97,6 +97,7 @@
                         @endif
 
                         @can('delete', $material)
+                        <!-- BUG: Menggunakan tag <a> (GET) untuk pemicu aksi hapus yang membutuhkan method DELETE -->
                         <a href="{{ route('materials.destroy', $material) }}" onclick="return confirm('Hapus materi ini?')" class="text-red-600 text-xs hover:underline">Hapus</a>
                         @endcan
                     </div>

@@ -49,8 +49,19 @@ class SubmissionController extends Controller
         return redirect()->route('courses.show', $assignment->course_id)->with('success', 'Tugas berhasil dikirim.');
     }
 
-    public function download(Submission $submission)
+    // FIX IDOR: Menambahkan verifikasi hak akses pada method download()
+    public function download(Request $request, Submission $submission)
     {
+        $user = $request->user();
+        $course = $submission->assignment->course;
+
+        // Hanya Admin, Pemilik Submission, atau Dosen Pengampu yang boleh mengunduh
+        $boleh = $user->role === 'admin'
+            || (int) $submission->user_id === (int) $user->id
+            || (int) $course->lecturer_id === (int) $user->id;
+
+        abort_unless($boleh, 403, 'Anda tidak memiliki akses ke submission ini.');
+
         if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }

@@ -25,9 +25,10 @@ class AssignmentController extends Controller
         return redirect()->route('courses.show', $course)->with('success', 'Tugas berhasil dibuat.');
     }
 
-    public function show(Assignment $assignment)
+    // FIX: Menerima model $course dan $assignment agar binding scope relasi parent-child dari route dapat diproses
+    public function show(Course $course, Assignment $assignment)
     {
-        Gate::authorize('view', $assignment->course);
+        Gate::authorize('view', $course);
 
         $assignment->load(['course', 'submissions.student', 'submissions.grade']);
 

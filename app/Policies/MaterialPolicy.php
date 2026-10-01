@@ -26,8 +26,13 @@ class MaterialPolicy
         return $user->role === 'admin' || $material->course->lecturer_id === $user->id || $material->uploaded_by === $user->id;
     }
 
+    // FIX: Menambahkan method download() untuk memastikan hanya Admin, Dosen Pengampu, atau Mahasiswa terdaftar yang bisa mengunduh
     public function download(User $user, Material $material): bool
     {
-        return $this->view($user, $material);
+        $course = $material->course;
+
+        return $user->role === 'admin'
+            || (int) $course->lecturer_id === (int) $user->id
+            || $course->students()->where('user_id', $user->id)->exists();
     }
 }

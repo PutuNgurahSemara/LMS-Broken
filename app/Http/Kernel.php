@@ -6,7 +6,5 @@ use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
-    protected $middlewareAliases = [
-        'role' => \App\Http\Middleware\RoleMiddleware::class,
-    ];
+    // FIX: Mengosongkan/menghapus alias dari Kernel.php karena pendaftaran dipindahkan ke bootstrap/app.php
 }

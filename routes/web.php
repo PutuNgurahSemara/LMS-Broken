@@ -19,26 +19,34 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
-
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('courses.index');
-    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('courses.index');
+    // FIX: Menambahkan route 'courses.index' agar pemanggilan route('courses.index') pada Blade berjalan normal
+    Route::get('/courses', [CourseController::class, 'index'])->name('courses.index');
+
+    // Route alternatif berdasarkan peran
+    Route::get('/lecturer/courses', [CourseController::class, 'index'])->middleware('role:dosen')->name('lecturer.courses.index');
+    Route::get('/student/courses', [CourseController::class, 'index'])->middleware('role:mahasiswa')->name('student.courses.index');
+    
     Route::get('/courses/create', [CourseController::class, 'create'])->name('courses.create');
     Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
+    
+    Route::get('/courses/{course}', [CourseController::class, 'show'])->name('courses.show');
     Route::get('/courses/{course}/edit', [CourseController::class, 'edit'])->name('courses.edit');
     Route::put('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
     Route::delete('/courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
 
-    Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('materials.store');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
-    Route::get('/materials/{material}/delete', [MaterialController::class, 'destroy'])->name('materials.destroy');
+    Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
-    Route::post('/courses/{course}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
-    Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+    Route::scopeBindings()->group(function () {
+        Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('materials.store');
+        Route::post('/courses/{course}/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+        Route::get('/courses/{course}/assignments/{assignment}', [AssignmentController::class, 'show'])->name('assignments.show');
+    });
+
     Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
     Route::post('/assignments/{assignment}/submissions', [SubmissionController::class, 'store'])->name('submissions.store');

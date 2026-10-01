@@ -54,8 +54,11 @@ class MaterialController extends Controller
         return redirect()->route('courses.show', $course)->with('success', 'Materi berhasil diunggah.');
     }
 
+    // FIX IDOR: Menambahkan Gate::authorize untuk memverifikasi hak akses unduh
     public function download(Material $material)
     {
+        Gate::authorize('download', $material);
+
         if ($material->type !== 'file' || ! $material->file_path || ! Storage::disk('local')->exists($material->file_path)) {
             abort(404, 'Berkas materi tidak ditemukan.');
         }
