@@ -19,15 +19,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user) {
+        // Bug 8 FIX: Gabungkan pengecekan email dan password menjadi satu kondisi
+        // dengan pesan error yang identik untuk kedua kasus.
+        // Sebelumnya: pesan berbeda → attacker bisa menguji apakah email terdaftar
+        // (User Enumeration / Email Enumeration attack). Informasi ini menjadi modal
+        // awal untuk serangan lanjutan seperti credential stuffing atau phishing.
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email tidak terdaftar dalam sistem.',
-            ], 401);
-        }
-
-        if (! Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Password yang Anda masukkan salah.',
+                'message' => 'Email atau kata sandi yang Anda masukkan tidak valid.',
             ], 401);
         }
 

@@ -21,7 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'This action is unauthorized.'], 401);
+                // Bug 6 FIX: AuthorizationException harus mengembalikan 403 Forbidden, bukan 401 Unauthorized.
+                // 401 = belum login / token tidak valid. 403 = sudah login tapi tidak berhak.
+                // Mengirim 401 di sini membuat client mengira perlu login ulang, padahal masalahnya adalah hak akses.
+                return response()->json(['message' => 'This action is unauthorized.'], 403);
             }
         });
     })->create();
