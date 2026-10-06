@@ -18,11 +18,13 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $request->email)->first();
+        //no 7 mengubah *if (! $user) {return response()->json( 'message' => 'Email tidak terdaftar dalam sistem.',], 401); }* menjadi *if (! $user || ! Hash::check($request->password, $user->password)) {return response()->json( 'message' => 'Email atau password yang Anda masukkan salah.',], 401); }* agar response lebih aman dan tidak mengungkapkan apakah email terdaftar atau tidak. Hal ini dilakukan untuk mencegah potensi serangan enumerasi akun di mana penyerang dapat mengetahui apakah email tertentu terdaftar di sistem.
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+        RateLimiter::hit($throttleKey);
 
-        if (! $user) {
-            return response()->json([
-                'message' => 'Email tidak terdaftar dalam sistem.',
-            ], 401);
+        return response()->json([
+        'message' => 'Email atau password yang Anda masukkan salah.',
+        ], 401);
         }
 
         if (! Hash::check($request->password, $user->password)) {

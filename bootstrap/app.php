@@ -21,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'This action is unauthorized.'], 401);
+                //no 5 mengubah *return response()->json(['message' => 'This action is unauthorized.'], 401);* menjadi *return response()->json(['message' => 'This action is unauthorized.'], 403);* agar status code response lebih sesuai dengan konteks. Status 403 (Forbidden) lebih tepat digunakan ketika user sudah terautentikasi tetapi tidak memiliki izin untuk mengakses resource tertentu, sedangkan status 401 (Unauthorized) biasanya digunakan ketika user belum terautentikasi.
+                return response()->json(['message' => 'This action is unauthorized.'], 403);
             }
         });
     })->create();
