@@ -7,10 +7,9 @@ use App\Models\User;
 
 class SubmissionPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        return true;
-    }
+    // FIX W07 (Cacat 6): Hapus method before(User $user, string $ability) yang selalu return true.
+    // Method before() yang selalu return true menyebabkan seluruh policy di bawahnya dilewati,
+    // sehingga siapapun (termasuk mahasiswa) bisa melihat, mengunduh, bahkan menilai submission orang lain.
 
     public function viewAny(User $user): bool
     {

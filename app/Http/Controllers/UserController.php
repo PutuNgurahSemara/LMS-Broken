@@ -12,6 +12,10 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        // FIX W07 (Cacat 7): Tambahkan otorisasi viewAny untuk User.
+        // Mencegah mahasiswa melihat daftar seluruh user beserta informasi sensitifnya (email, NIP/NIM).
+        Gate::authorize('viewAny', User::class);
+
         $query = User::query();
 
         if ($request->filled('role')) {
@@ -89,7 +93,10 @@ class UserController extends Controller
             $user->password = Hash::make($validated['password']);
         }
 
-        if ($request->has('role')) {
+        // FIX W07 (Cacat 8): Tambahkan Gate::allows('updateRole', $user).
+        // Mencegah celah Privilege Escalation di mana mahasiswa/dosen yang mengupdate profilnya sendiri
+        // menyelipkan payload role=admin untuk menjadikan dirinya administrator.
+        if ($request->has('role') && Gate::allows('updateRole', $user)) {
             $request->validate(['role' => 'required|in:admin,dosen,mahasiswa']);
             $user->role = $request->role;
         }

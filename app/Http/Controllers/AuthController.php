@@ -32,24 +32,28 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! User::where('email', $credentials['email'])->exists()) {
-            throw ValidationException::withMessages([
-                'email' => 'Email tidak terdaftar.',
-            ]);
-        }
+        // FIX W07 (Cacat 1): Hapus pengecekan eksplisit User::where('email', ...)->exists() 
+        // yang sebelumnya menampilkan 'Email tidak terdaftar.' untuk mencegah serangan User Enumeration.
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::clear($throttleKey);
+
+            // FIX W07 (Cacat 2): Regenerasi ID session setelah login berhasil 
+            // untuk mencegah serangan Session Fixation.
+            $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard'));
         }
 
         RateLimiter::hit($throttleKey);
 
+        // FIX W07 (Cacat 1): Gunakan pesan kesalahan generik agar penyerang tidak bisa
+        // membedakan apakah email terdaftar atau kata sandi yang salah.
         throw ValidationException::withMessages([
-            'email' => 'Password yang Anda masukkan salah.',
+            'email' => 'Email atau password yang Anda masukkan salah.',
         ]);
     }
+
 
     public function logout(Request $request)
     {
