@@ -21,7 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'This action is unauthorized.'], 401);
+                return response()->json(['message' => $e->getMessage() ?: 'This action is unauthorized.'], 403);
             }
+        });
+        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request, \Throwable $e) {
+            if ($request->is('api/*')) {
+                return true;
+            }
+            return $request->expectsJson();
         });
     })->create();
