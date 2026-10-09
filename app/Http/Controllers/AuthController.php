@@ -32,23 +32,19 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! User::where('email', $credentials['email'])->exists()) {
-            throw ValidationException::withMessages([
-                'email' => 'Email tidak terdaftar.',
-            ]);
-        }
-
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            RateLimiter::clear($throttleKey);
+          RateLimiter::clear($throttleKey);
 
-            return redirect()->intended(route('dashboard'));
-        }
+          $request->session()->regenerate();
 
-        RateLimiter::hit($throttleKey);
+          return redirect()->intended(route('dashboard'));
+       }
 
-        throw ValidationException::withMessages([
-            'email' => 'Password yang Anda masukkan salah.',
-        ]);
+          RateLimiter::hit($throttleKey);
+
+            throw ValidationException::withMessages([
+               'email' => 'Email atau password yang Anda masukkan salah.',
+            ]);
     }
 
     public function logout(Request $request)
