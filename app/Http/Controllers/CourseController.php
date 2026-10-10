@@ -81,6 +81,11 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
+        // FIX W07 (Cacat 4): Tambahkan Gate::authorize() pada update.
+        // @can di Blade hanya menyembunyikan tombol di UI, bukan pengaman server.
+        // Tanpa ini, dosen/mahasiswa lain tetap bisa mengirim PUT request langsung.
+        Gate::authorize('update', $course);
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:20', Rule::unique('courses', 'code')->ignore($course->id)],
             'name' => 'required|string|max:255',
@@ -97,6 +102,10 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
+        // FIX W07 (Cacat 4): Tambahkan Gate::authorize() pada destroy.
+        // Mencegah pengguna yang tidak memiliki hak akses menghapus mata kuliah via direct request.
+        Gate::authorize('delete', $course);
+
         $course->delete();
 
         return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus.');

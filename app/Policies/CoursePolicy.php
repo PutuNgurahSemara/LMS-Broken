@@ -18,7 +18,10 @@ class CoursePolicy
             return true;
         }
 
-        return $course->students->pluck('id')->contains($user->id);
+        // FIX W07 (Cacat 9): Gunakan exists() melalui relasi, BUKAN ->students->pluck('id')->contains().
+        // Properti dinamis $course->students melakukan lazy loading seluruh model student ke memori,
+        // memicu masalah N+1 dan konsumsi memori tinggi jika dievaluasi dalam iterasi.
+        return $course->students()->where('user_id', $user->id)->exists();
     }
 
     public function create(User $user): bool
