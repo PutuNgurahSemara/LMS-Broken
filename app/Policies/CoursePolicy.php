@@ -18,7 +18,7 @@ class CoursePolicy
             return true;
         }
 
-        return $course->students()->where('user_id', $user->id)->exists();
+        return $course->students->pluck('id')->contains($user->id);
     }
 
     public function create(User $user): bool

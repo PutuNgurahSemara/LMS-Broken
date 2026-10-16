@@ -7,6 +7,7 @@ use App\Models\User;
 
 class SubmissionPolicy
 {
+
     public function viewAny(User $user): bool
     {
         return in_array($user->role, ['admin', 'dosen']);

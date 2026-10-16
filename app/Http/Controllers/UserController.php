@@ -35,14 +35,14 @@ class UserController extends Controller
 
     public function create()
     {
-        Gate::authorize('viewAny', User::class);
+        Gate::authorize('create', User::class);
 
         return view('users.create');
     }
 
     public function store(Request $request)
     {
-        Gate::authorize('viewAny', User::class);
+        Gate::authorize('create', User::class);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -59,7 +59,6 @@ class UserController extends Controller
             'nim_nip' => $validated['nim_nip'] ?? null,
         ]);
 
-        // Explicitly set role
         $user->role = $validated['role'];
         $user->save();
 
@@ -92,8 +91,7 @@ class UserController extends Controller
             $user->password = Hash::make($validated['password']);
         }
 
-        // Only admin can update user role
-        if ($request->has('role') && Gate::allows('updateRole', $user)) {
+        if ($request->has('role')) {
             $request->validate(['role' => 'required|in:admin,dosen,mahasiswa']);
             $user->role = $request->role;
         }

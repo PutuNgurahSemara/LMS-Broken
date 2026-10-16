@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -32,17 +33,18 @@ class AuthController extends Controller
         }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            RateLimiter::clear($throttleKey);
-            $request->session()->regenerate();
+          RateLimiter::clear($throttleKey);
 
-            return redirect()->intended(route('dashboard'));
-        }
+          $request->session()->regenerate();
 
-        RateLimiter::hit($throttleKey);
+          return redirect()->intended(route('dashboard'));
+       }
 
-        throw ValidationException::withMessages([
-            'email' => 'Email atau password yang Anda masukkan salah.',
-        ]);
+          RateLimiter::hit($throttleKey);
+
+            throw ValidationException::withMessages([
+               'email' => 'Email atau password yang Anda masukkan salah.',
+            ]);
     }
 
     public function logout(Request $request)
