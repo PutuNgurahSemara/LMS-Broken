@@ -8,7 +8,7 @@ use App\Models\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use RuntimeException;
 
 class SubmissionController extends Controller
 {
@@ -23,37 +23,50 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|extensions:pdf,zip,rar,docx|max:10',
+            'file' => 'required|file|mimes:pdf,zip,rar,docx|extensions:pdf,zip,rar,docx|max:10240',
         ]);
 
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $fileSize = $file->getSize();
 
-        $filePath = $file->storeAs('submissions', $originalName, 'public');
+        $filePath = $file->store('submissions', 'local');
 
-        Submission::updateOrCreate(
-            ['assignment_id' => $assignment->id, 'user_id' => $user->id],
-            [
-                'file_path' => $filePath,
-                'original_name' => $originalName,
-                'file_size' => $fileSize,
-                'notes' => $validated['notes'] ?? null,
-                'submitted_at' => now(),
-                'status' => 'submitted',
-            ]
-        );
+        if ($filePath === false) {
+            throw new RuntimeException('Submission file could not be stored.');
+        }
+
+        $submission = Submission::firstOrNew([
+            'assignment_id' => $assignment->id,
+            'user_id' => $user->id,
+        ]);
+        $oldFilePath = $submission->file_path;
+        $submission->fill([
+            'file_path' => $filePath,
+            'original_name' => $originalName,
+            'file_size' => $fileSize,
+            'notes' => $validated['notes'] ?? null,
+            'submitted_at' => now(),
+            'status' => 'submitted',
+        ]);
+        $submission->save();
+
+        if ($oldFilePath) {
+            Submission::deleteStoredFiles([$oldFilePath]);
+        }
 
         return redirect()->route('courses.show', $assignment->course_id)->with('success', 'Tugas berhasil dikirim.');
     }
 
     public function download(Submission $submission)
     {
-        if (! $submission->file_path || ! Storage::disk('public')->exists($submission->file_path)) {
+        Gate::authorize('download', $submission);
+
+        if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($submission->file_path, $submission->original_name);
+        return Storage::disk('local')->download($submission->file_path, $submission->original_name);
     }
 
     public function grade(Request $request, Submission $submission)

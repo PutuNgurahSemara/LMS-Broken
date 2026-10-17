@@ -13,6 +13,22 @@ class Assignment extends Model
 
     protected $fillable = ['course_id', 'title', 'description', 'due_at', 'max_score'];
 
+    protected array $submissionFilePathsForDeletion = [];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Assignment $assignment): void {
+            $assignment->submissionFilePathsForDeletion = $assignment->submissions()
+                ->whereNotNull('file_path')
+                ->pluck('file_path')
+                ->all();
+        });
+
+        static::deleted(function (Assignment $assignment): void {
+            Submission::deleteStoredFiles($assignment->submissionFilePathsForDeletion);
+        });
+    }
+
     protected function casts(): array
     {
         return [

@@ -14,6 +14,13 @@ class Course extends Model
 
     protected $fillable = ['code', 'name', 'description', 'sks', 'lecturer_id', 'status'];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Course $course): void {
+            $course->assignments()->get()->each->delete();
+        });
+    }
+
     public function lecturer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'lecturer_id');

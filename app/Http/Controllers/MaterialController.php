@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class MaterialController extends Controller
 {
@@ -67,7 +68,17 @@ class MaterialController extends Controller
 
     public function destroy(Material $material)
     {
+        Gate::authorize('delete', $material);
+
         $course = $material->course;
+
+        if ($material->file_path) {
+            $storage = Storage::disk('local');
+
+            if ($storage->exists($material->file_path) && ! $storage->delete($material->file_path)) {
+                throw new RuntimeException('Unable to delete material file.');
+            }
+        }
 
         $material->delete();
 
