@@ -67,10 +67,22 @@ class MaterialController extends Controller
 
     public function destroy(Material $material)
     {
+        // NOTE PERBAIKAN:
+        // 6. Tombol hapus di view memang disembunyikan dengan @can, tapi di server wajib ada Gate::authorize
+        //    agar mahasiswa/user lain tidak bisa bypass lewat request DELETE langsung.
+        Gate::authorize('delete', $material);
+
         $course = $material->course;
+
+        // NOTE PERBAIKAN:
+        // 7. Hapus berkas fisik dari storage 'local' agar tidak terjadi storage leak / berkas yatim di server.
+        if ($material->file_path && Storage::disk('local')->exists($material->file_path)) {
+            Storage::disk('local')->delete($material->file_path);
+        }
 
         $material->delete();
 
         return redirect()->route('courses.show', $course)->with('success', 'Materi berhasil dihapus.');
     }
+
 }
