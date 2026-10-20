@@ -23,14 +23,24 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|extensions:pdf,zip,rar,docx|max:10',
+            // NOTE PERBAIKAN:
+            // 1. Ganti 'extensions' ke 'mimes' agar memvalidasi MIME type asli file, bukan hanya akhiran string.
+            // 2. Ganti 'max:10' ke 'max:10240' karena satuan Laravel adalah KB (10 KB -> 10240 KB = 10 MB).
+            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:10240',
         ]);
 
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $fileSize = $file->getSize();
 
-        $filePath = $file->storeAs('submissions', $originalName, 'public');
+        // NOTE PERBAIKAN:
+        // 3. Jangan pakai $originalName langsung karena rawan tabrakan nama file & path traversal.
+        //    Gunakan hash acak unik (Str::random(40)).
+        $hashedName = Str::random(40).'.'.$file->getClientOriginalExtension();
+
+        // 4. Ganti disk dari 'public' ke 'local' agar tugas mahasiswa tidak bocor ke publik via URL.
+        $filePath = $file->storeAs('submissions', $hashedName, 'local');
+
 
         Submission::updateOrCreate(
             ['assignment_id' => $assignment->id, 'user_id' => $user->id],
@@ -49,11 +59,17 @@ class SubmissionController extends Controller
 
     public function download(Submission $submission)
     {
-        if (! $submission->file_path || ! Storage::disk('public')->exists($submission->file_path)) {
+        // NOTE PERBAIKAN:
+        // 5. Tambahkan otorisasi Gate agar mahasiswa lain tidak bisa mengunduh berkas milik orang lain (cegah IDOR).
+        Gate::authorize('download', $submission);
+
+        // NOTE PERBAIKAN:
+        // Ganti disk dari 'public' ke 'local' sesuai lokasi penyimpanan berkas privat.
+        if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($submission->file_path, $submission->original_name);
+        return Storage::disk('local')->download($submission->file_path, $submission->original_name);
     }
 
     public function grade(Request $request, Submission $submission)
