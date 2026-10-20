@@ -15,12 +15,13 @@ class MaterialController extends Controller
     {
         Gate::authorize('create', Material::class);
 
+        // [PERBAIKAN MASALAH #3]: Menambahkan aturan 'extensions' bersandingan dengan 'mimes'
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'type' => 'required|in:file,link',
             'external_url' => 'required_if:type,link|nullable|url',
-            'file' => 'required_if:type,file|nullable|file|mimes:pdf,docx,pptx,zip|max:10240', // Max 10MB (in KB)
+            'file' => 'required_if:type,file|nullable|file|mimes:pdf,docx,pptx,zip|extensions:pdf,docx,pptx,zip|max:10240', // Max 10MB
         ]);
 
         $filePath = null;
@@ -67,7 +68,15 @@ class MaterialController extends Controller
 
     public function destroy(Material $material)
     {
+        // [PERBAIKAN MASALAH #1]: Memastikan pengguna memiliki izin untuk menghapus materi
+        Gate::authorize('delete', $material);
+
         $course = $material->course;
+
+        // [PERBAIKAN MASALAH #2]: Menghapus berkas fisik di disk local sebelum menghapus record dari database
+        if ($material->type === 'file' && $material->file_path && Storage::disk('local')->exists($material->file_path)) {
+            Storage::disk('local')->delete($material->file_path);
+        }
 
         $material->delete();
 

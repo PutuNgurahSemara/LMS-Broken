@@ -21,39 +21,71 @@ class SubmissionController extends Controller
             abort(403, 'Anda tidak terdaftar dalam mata kuliah ini.');
         }
 
+        // [PERBAIKAN MASALAH #4 & #5]: Validasi MIME Type + Ekstensi & Ukuran Max 10MB (10240 KB)
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|extensions:pdf,zip,rar,docx|max:10',
+            'file' => [
+                'required',
+                'file',
+                'mimes:pdf,zip,rar,docx',
+                'extensions:pdf,zip,rar,docx',
+                'max:10240', // 10240 KB = 10 MB
+            ],
         ]);
 
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $fileSize = $file->getSize();
 
-        $filePath = $file->storeAs('submissions', $originalName, 'public');
+        // [PERBAIKAN MASALAH #6]: Ambil data submission lama (jika ada) untuk mencatat path berkas lama
+        $submission = Submission::firstOrNew([
+            'assignment_id' => $assignment->id,
+            'user_id' => $user->id,
+        ]);
 
-        Submission::updateOrCreate(
-            ['assignment_id' => $assignment->id, 'user_id' => $user->id],
-            [
-                'file_path' => $filePath,
-                'original_name' => $originalName,
-                'file_size' => $fileSize,
-                'notes' => $validated['notes'] ?? null,
-                'submitted_at' => now(),
-                'status' => 'submitted',
-            ]
-        );
+        $oldFilePath = $submission->file_path;
+
+        // [PERBAIKAN MASALAH #1 & #3]: Disimpan di disk 'local' (privat) & menggunakan nama acak unik dari store()
+        $filePath = $file->store('submissions', 'local');
+
+        if (! $filePath) {
+            throw new \RuntimeException('Gagal menyimpan berkas submission.');
+        }
+
+        // Simpan / Perbarui data ke Database
+        $submission->fill([
+            'file_path' => $filePath,
+            'original_name' => $originalName,
+            'file_size' => $fileSize,
+            'notes' => $validated['notes'] ?? null,
+            'submitted_at' => now(),
+            'status' => 'submitted',
+        ])->save();
+
+        // [PERBAIKAN MASALAH #6]: Hapus berkas lama dari penyimpanan privat agar tidak menumpuk
+        if ($oldFilePath && $oldFilePath !== $filePath && Storage::disk('local')->exists($oldFilePath)) {
+            if (! Storage::disk('local')->delete($oldFilePath)) {
+                logger()->error('Gagal menghapus berkas submission lama.', [
+                    'path' => $oldFilePath,
+                ]);
+            }
+        }
 
         return redirect()->route('courses.show', $assignment->course_id)->with('success', 'Tugas berhasil dikirim.');
     }
 
     public function download(Submission $submission)
     {
-        if (! $submission->file_path || ! Storage::disk('public')->exists($submission->file_path)) {
+        // [PERBAIKAN MASALAH #2 & #7]: Wajib periksa otorisasi server-side lewat Gate Policy sebelum mengunduh
+        Gate::authorize('download', $submission);
+
+        // [PERBAIKAN MASALAH #1]: Memeriksa keberadaan berkas di disk 'local' (privat)
+        if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($submission->file_path, $submission->original_name);
+        // [PERBAIKAN MASALAH #1]: Mengunduh dari disk 'local' (privat)
+        return Storage::disk('local')->download($submission->file_path, $submission->original_name);
     }
 
     public function grade(Request $request, Submission $submission)
