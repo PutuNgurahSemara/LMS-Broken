@@ -23,14 +23,18 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|extensions:pdf,zip,rar,docx|max:10',
+            // 'file' => 'required|file|extensions:pdf,zip,rar,docx|max:10', Validasi berkas submission menggunakan aturan 'extensions' yang hanya mencocokkan string ekstensi nama berkas (rentan bypass file upload berbahaya), serta menggunakan nilai 'max:10' yang salah satuan karena Laravel mengukur berkas dalam Kilobyte (membatasi berkas hanya 10 KB sehingga berkas tugas mahasiswa selalu ditolak).
+            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:10240', // Perbaikan: Mengubah aturan validasi menjadi 'mimes:pdf,zip,rar,docx' untuk memverifikasi MIME type asli berkas berdasarkan kontennya, serta mengoreksi batas ukuran menjadi 'max:10240' agar sesuai dengan kapasitas 10 MB (10.240 KB).
+
         ]);
 
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
         $fileSize = $file->getSize();
 
-        $filePath = $file->storeAs('submissions', $originalName, 'public');
+        // Simpan dengan nama acak aman di storage privat (disk local)
+        $hashedName = Str::random(40).'.'.$file->getClientOriginalExtension();
+        $filePath = $file->storeAs('submissions', $hashedName, 'local');
 
         Submission::updateOrCreate(
             ['assignment_id' => $assignment->id, 'user_id' => $user->id],
@@ -49,11 +53,14 @@ class SubmissionController extends Controller
 
     public function download(Submission $submission)
     {
-        if (! $submission->file_path || ! Storage::disk('public')->exists($submission->file_path)) {
+        Gate::authorize('download', $submission);
+        // Method download() pada SubmissionController tidak memanggil Gate::authorize('download', $submission); sehingga pengguna yang sudah login dapat mengunduh berkas tugas milik mahasiswa lain hanya dengan mengganti ID pada URL (celah IDOR), yang seharusnya dicegah dengan memvalidasi kepemilikan berkas atau peran dosen/admin melalui SubmissionPolicy sebelum berkas dikirimkan.
+
+        if (! $submission->file_path || ! Storage::disk('local')->exists($submission->file_path)) {
             abort(404, 'Berkas submission tidak ditemukan.');
         }
 
-        return Storage::disk('public')->download($submission->file_path, $submission->original_name);
+        return Storage::disk('local')->download($submission->file_path, $submission->original_name);
     }
 
     public function grade(Request $request, Submission $submission)

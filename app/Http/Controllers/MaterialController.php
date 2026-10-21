@@ -67,7 +67,17 @@ class MaterialController extends Controller
 
     public function destroy(Material $material)
     {
+        // $course = $material->course;
+        // $material->delete();
+        // Method destroy() pada MaterialController sebelumnya langsung mengeksekusi penghapusan materi tanpa memanggil Gate::authorize('delete', $material);. Tombol hapus hanya disembunyikan di sisi antarmuka (@can), sehingga pengguna tanpa hak akses (seperti mahasiswa) tetap dapat membypass tampilan dan mengirimkan request DELETE langsung ke endpoint /materials/{material} untuk menghapus materi pembelajaran milik dosen.
+        Gate::authorize('delete', $material);
+
         $course = $material->course;
+
+        // Hapus berkas fisik dari storage privat sebelum record database dihapus agar tidak meninggalkan berkas yatim (orphaned file)
+        if ($material->file_path && Storage::disk('local')->exists($material->file_path)) {
+            Storage::disk('local')->delete($material->file_path);
+        }
 
         $material->delete();
 
