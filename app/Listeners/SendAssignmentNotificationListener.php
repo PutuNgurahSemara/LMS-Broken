@@ -4,8 +4,9 @@ namespace App\Listeners;
 
 use App\Events\AssignmentCreated;
 use App\Notifications\NewAssignmentNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendAssignmentNotificationListener
+class SendAssignmentNotificationListener implements ShouldQueue
 {
     public function handle(AssignmentCreated $event): void
     {
