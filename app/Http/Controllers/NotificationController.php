@@ -15,7 +15,7 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, string $id)
     {
-        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        $notification = $request->user()->notifications()->whereKey($id)->findOrFail();
         $notification->markAsRead();
 
         return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');

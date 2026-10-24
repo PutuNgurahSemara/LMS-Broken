@@ -3,7 +3,7 @@
 namespace App\Events;
 
 use App\Models\Assignment;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -20,7 +20,7 @@ class AssignmentCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('course.'.$this->assignment->course_id),
+            new PrivateChannel('course.'.$this->assignment->course_id),
         ];
     }
 }
