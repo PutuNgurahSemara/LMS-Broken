@@ -15,6 +15,7 @@ class SendAssignmentNotificationJob implements ShouldQueue
     use InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 60;
+    public int $tries = 3;
 
     public function __construct(public Assignment $assignment)
     {
