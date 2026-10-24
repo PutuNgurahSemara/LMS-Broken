@@ -1,246 +1,271 @@
-# Catatan Perbaikan Kelompok 4 | Minggu 6 - `Branch W06`
+# Catatan Perbaikan Kelompok 4 | Minggu 10 - `Branch W10`
 
 ### Anggota Kelompok
 1. Fitriyansyah Wicaksonoaji (10241033)
 2. Hamzah Wiranata (10241035)
 3. Jeshua Austin Daceka (10241037)
 
-## 1. Model mentah dikembalikan pada 2 endpoint
+## 1. Listener masih belum menggunakan ShouldQueue
 
-**Mengapa bermasalah?:** Di `Api\CourseController`, ada 2 endpoint yang langsung mengembalikan object Eloquent $course:
-```php
-return $course
-```
-keduanya adalah:
-- show()
-- update()
+**Mengapa bermasalah?:** Method `handle()` langsung mengambil mahasiswa dan mengirim notification kepada mereka. Pemrosesan notification dilakukan menggunakan 'sync' (jadi tanpa queu) ketika event diproses. Jikalau banyak mahasiswa terdaftar, proses pembuatan job bisa terasa lambat.
 
-Ini bermasalah karena struktur data internal model yang meruapakan important things bisa terekspos dan membuat format response API tidak konsisten dengan endpoint lain yang menggunakan `CourseResource`. <--- sendiri sudah disediakan untuk menentukan field apa saja yang boleh dikirimkan ke client.
-
-**Langkah perbaikan:** ganti $course menggunakan API resource
+**Langkah perbaikan:** Implementasikan `ShouldQueue` dan gunakan pengiriman kolektif.
 
 **Sebelum:**
 
-Lokasi file : app/Http/Controllers/Api/CourseController.php
+Lokasi file : `app/Listeners/SendAssignmentNotificationListener.php`
 ```php
-public function update(Request $request, Course $course)
-    { return $course; }
-```
-dan 
+use App\Events\AssignmentCreated;
+use App\Notifications\NewAssignmentNotification;
 
-```php
-public function show(Course $course)
-    { return $course; }
+class SendAssignmentNotificationListener
 ```
 
 
 **Sesudah:**
 
-Lokasi file : app/Http/Controllers/Api/CourseController.php
+Lokasi file : `app/Listeners/SendAssignmentNotificationListener.php`
 ```php
-public function update(Request $request, Course $course)
-    { return response()->json(($course), 200); }
-```
-dan 
+use App\Events\AssignmentCreated;
+use App\Notifications\NewAssignmentNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-```php
-public function show(Course $course)
-    { return response()->json(200); }
+class SendAssignmentNotificationListener implements ShouldQueue
 ```
 
 
-## 2. Satu endpoint tidak menggunakan `auth:sanctum` 
+## 2. Notification dikirim satu per satu dalam loop
 
-**Mengapa bermasalah?:** Endpoint yang seharusnya hanya dapat diakses user terautentikasi menjadi dapat diakses tanpa token. Ini dapat melewati lapisan autentikasi yang seharusnya melindungi API.
+**Mengapa bermasalah?:** berhubungan dengan masalah pertama, walaupun Listener diperbaiki, Job tetap memiliki pola pengiriman yang sama jika Job--yang saat ini--ini digunakan di bagian lain. Akhirnya, kode akan mengulang proses pengiriman untuk setiap mahasiswa.
 
-**Langkah perbaikan:** Pindahkan course.show ke dalam group middleware dan tambahkan code `->name('course.show');`
+**Langkah perbaikan:** mengganti isi `handle`
 
 **Sebelum:**
 
-Lokasi file : \routes\api.php
+Lokasi file : `app/Jobs/SendAssignmentNotificationJob.php`
 ```php
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/courses/{course}', [CourseController::class, 'show']);
+class SendAssignmentNotificationJob implements ShouldQueue
+{
+    public function handle(): void
+    {
+        $students = $this->assignment->course->students;
 
-Route::middleware('auth:sanctum')->name('api.')->group(function) () {}
-```
-
-**Sesudah:**
-
-Lokasi file : \routes\api.php
-```php
-Route::middleware('auth:sanctum')->name('api.')->group(function) () {
-Route::post('/courses', [CourseController::class, 'store'])->name('courses.store');
-Route::get('/courses/{course}', [CourseController::class, 'show'])->name('course.show');
-Route::put('/courses/{course}', [CourseController::class, 'update'])->name('courses.update');
+        foreach ($students as $student) {
+            $student->notify(new NewAssignmentNotification($this->assignment));
+        }
+    }
 }
 ```
 
-## 3. Status code salah pada `store`
-
-**Mengapa bermasalah?:** Endpoint store digunakan untuk membuat resource baru, tetapi response menggunakan status `200 OK`. Untuk operasi pembuatan resource, status HTTP yang sesuai secara semantik adalah `201 Created`.
-
-**Langkah perbaikan:** ubah kode engpoint 200 -> 204
-
-**Sebelum:**
-
-Lokasi file : app/Http/Controllers/Api/CourseController.php
-```php
-public function store(Request $request)
-    {
-        return response()->json(new CourseResource($course), 200);
-    }
-```
 
 **Sesudah:**
 
-Lokasi file : app/Http/Controllers/Api/CourseController.php
+Lokasi file : `app/Jobs/SendAssignmentNotificationJob.php`
 ```php
-public function store(Request $request)
+class SendAssignmentNotificationJob implements ShouldQueue
+{
+    public function handle(): void
     {
-        return response()->json(new CourseResource($course), 201);
-    }
-```
+        $students = $this->assignment->course->students;
 
-## 4. Status code salah pada `destroy`
-
-**Mengapa bermasalah?:** Operasi DELETE berhasil, tetapi endpoint mengembalikan 200 OK. Dalam desain REST API, penghapusan yang berhasil dan tidak perlu mengembalikan representasi resource biasanya menggunakan 204 No Content.
-
-**Langkah perbaikan:** Ubah kode endpoint 200 -> 204
-
-**Sebelum:**
-
-Lokasi file : app/Http/Controllers/Api/CourseController.php
-```php
-public function destroy(Course $course)
-    {
-        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 200);
-    }
-```
-
-**Sesudah:**
-
-Lokasi file : app/Http/Controllers/Api/CourseController.php
-```php
-public function destroy(Course $course)
-    {
-        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 204);
-    }
-```
-
-## 5.  `403 Forbidden` dikembalikan sebagai `401 Unauthorized`
-
-**Mengapa bermasalah?:** 
-401 dan 403 memiliki arti berbeda:
-- 401 Unauthorized → Belum login / token tidak valid.
-- 403 Forbidden → Sudah login tapi tidak berhak.
-Karena exception yang ditangani adalah authorization/permission failure, mengubahnya menjadi 401 membuat client API menerima status yang tidak menggambarkan kondisi sebenarnya.
-
-**Langkah perbaikan:** 
-
-**Sebelum:**
-
-Lokasi file : \bootstrap\app.php
-```php
-return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting()
-    ->withMiddleware(function (Middleware $middleware) {})
-
-    ->withExceptions(function (Exceptions $exceptions) {
-        {
-            return response()->json(['message' => 'This action is unauthorized.'], 401);
-            }
-        });
-```
-
-**Sesudah:**
-
-Lokasi file : \bootstrap\app.php
-```php
-{ return response()->json(['message' => 'This action is unauthorized.'], 403); }
-```
-
-## 6. Login API tidak memiliki throtle 
-
-**Mengapa bermasalah?:** Endpoint login dapat menerima percobaan autentikasi berulang tanpa pembatasan pada level aplikasi. Ini meningkatkan risiko brute-force/password guessing attack.
-
-**Langkah perbaikan:** Tambahin middleware group untuk login
-
-**Sebelum:**
-
-Lokasi file : \routes\api.php
-```php
-Route::post('/login', [AuthController::class, 'login']);
-```
-
-
-**Sesudah:**
-
-Lokasi file : \routes\api.php
-```php
-Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-});
-```
-
-## 7. Pesan login membocorkan keberadaan email
-
-**Mengapa bermasalah?:** Perbedaan pesan memungkinkan seseorang menguji alamat email dan mengetahui apakah email tersebut terdaftar di sistem. ini disebut user/email enumeration. dari response yang dikasih nanti, user bisa tahu keberadaan alamat email di sistem.
-
-**Langkah perbaikan:** 
-
-**Sebelum:**
-
-Lokasi file : \app\Http\Controllers\Api\AuthController.php
-```php
-if (! $user) {
-            return response()->json([
-                'message' => 'Email tidak terdaftar dalam sistem.',
-            ], 401);
-        }
-
-        if (! Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Password yang Anda masukkan salah.',
-            ], 401);
-        }
-```
-
-**Sesudah:**
-
-Lokasi file : 
-```php
-if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'email' => ['Email atau kata sandi salah.'],
-            ], 401);
-        }
-```
-
-## 8. N+1 query pada endpoint daftar course
-
-**Mengapa bermasalah?:** Jika endpoint membutuhkan data lecturer untuk setiap course tetapi relasinya tidak dipersiapkan secara efisien, pengambilan relasi satu per satu dapat menyebabkan pola N+1 query: satu query untuk daftar course, kemudian query tambahan berulang untuk data lecturer. Dampaknya terutama terasa ketika jumlah course semakin besar karena jumlah query dapat meningkat mengikuti jumlah record.
-
-**Langkah perbaikan:** 
-
-**Sebelum:**
-
-Lokasi file : app/Http/Controllers/Api/CourseController.php
-```php
-public function index(Request $request)
-    {
-        return CourseResource::collection($courses);
-    }
-```
-
-**Sesudah:**
-
-Lokasi file : app/Http/Controllers/Api/CourseController.php
-```php
-public function index(Request $request)
-    {
-        return CourseResource::collection(
-            Course::with('lecturer')->withCount(['materials', 'assignments'])->paginate(10)
+        Notification::send(
+            $students,
+            new NewAssignmentNotification($this->assignment)
         );
+    };
+}
+
+```
+
+## 3. Payload notification memuat nilai mahasiswa
+
+**Mengapa bermasalah?:** Jika memasukkan field yang isinya berisi 'nilai' mahasiswa, data akademik atau hal-hal penting lainnya bisa terlihat oleh penerima notifikasi yang tidak berhak melihat nilai mahasiswa lain. Karena data 'nilai' seluruh mahasiswa dimasukkan ke payload setiap notifikasi, hal tersebut bisa menimbulkan N+1 query 
+
+N+1 query adalah masalah performa pada aplikasi yang menggunakan basis data relasional, di mana aplikasi melakukan 1 kueri utama untuk mengambil data utama, diikuti oleh N kueri tambahan untuk mengambil data relasi dari setiap baris hasil kueri tersebut.
+
+Contohnya seperti, mau nampilkan daftar produk yang ada 100 beserta nama kategorinya:
+1. 1 query utama: ngambil semua data produk
+2. N query tambahan: muncul 1 kueri terpisah untuk setiap produk guna mengambil kategori produk.
+
+Total kueri yang dikirim aplikasi jadi 101 kueri ke basis data. Bisa lemot aplikasimu, servermu juga.
+
+**Langkah perbaikan:** Hapus `student_grades` dari payload. Cukup kirim informasi tentang assignment itu sendiri.
+
+**Sebelum:**
+
+Lokasi file : `app/Notifications/NewAssignmentNotification.php`
+```php
+class NewAssignmentNotification extends Notification implements ShouldQueue
+{
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'assignment_id' => $this->assignment->id,
+            'title' => $this->assignment->title,
+            'course_name' => $this->assignment->course->name,
+            'due_at' => $this->assignment->due_at->toIso8601String(),
+            'message' => "Tugas baru '{$this->assignment->title}' telah ditambahkan.",
+            'student_grades' => $this->assignment->course->students->map(function ($student) {
+                return [
+                    'student_id' => $student->id,
+                    'name' => $student->name,
+                    'score' => $student->submissions()->with('grade')->get()->pluck('grade.score')->filter()->avg(),
+                ];
+            }),
+        ];
     }
+}
+```
+
+
+**Sesudah:**
+
+Lokasi file : `app/Notifications/NewAssignmentNotification.php`
+```php
+class NewAssignmentNotification extends Notification implements ShouldQueue
+{
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'assignment_id' => $this->assignment->id,
+            'title' => $this->assignment->title,
+            'course_name' => $this->assignment->course->name,
+            'due_at' => $this->assignment->due_at->toIso8601String(),
+            'message' => "Tugas baru '{$this->assignment->title}' telah ditambahkan.",
+        ];
+    }
+}
+```
+
+## 4. Endpoint tandai-dibaca tidak memeriksa kepemilikan
+
+**Mengapa bermasalah?:** User yang sudah login dapat mencoba ID notifikasi milik user lain. Karena pencarian tidak dibatasi based on pemiliknya, notifikasi tersebut berpotensi ditandai-dibaca oleh user yang salah.
+
+**Langkah perbaikan:** Cari notifikasi melalui "relasi notifikasi" milik user yang sedang login.
+
+**Sebelum:**
+
+Lokasi file : `app/Http/Controllers/NotificationController.php`
+```php
+class NotificationController extends Controller
+{
+    public function markAsRead(Request $request, string $id)
+    {
+        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        $notification->markAsRead();
+
+        return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');
+    }
+}
+```
+
+
+**Sesudah:**
+
+Lokasi file : `app/Http/Controllers/NotificationController.php`
+```php
+class NotificationController extends Controller
+{
+    public function markAsRead(Request $request, string $id)
+    {
+        $notification = $request->user()
+        ->notifications()
+        ->whereKey($id)
+        ->findOrFail();
+        $notification->markAsRead();
+
+        return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');
+    }
+}
+```
+
+## 5. Tidak ada migration untuk `failed_jobs`
+
+**Mengapa bermasalah?:** Disaat `config/queue.php` sudah menggunakan konfigurasi `failed_jobs`, migrationnya malah belum ada. Ketika Job gagal setelah percobaan yang diizinkan, Laravel tidak dapat mencatat kegagalnnya ke tabel karena kan belum tersedia.
+
+**Langkah perbaikan:** Cukup lakukan `php artisan migrate` karena `failed_jobs` sudah ada di dalam kerangka laravel 12, migrasi `0001_01_01_000002_create_jobs_table`
+
+Lokasi file : `database/migrations/0001_01_01_000002_create_jobs_table`
+```shell
+INFO  Preparing database.  
+
+  Creating migration table ....................... 341.17ms DONE
+
+INFO  Running migrations.  
+
+  0001_01_01_000001_create_cache_table ........... 270.34ms DONE
+  0001_01_01_000002_create_jobs_table .............. 6.45ms DONE
+  2026_01_01_000001_create_users_table ............ 75.22ms DONE
+  2026_01_01_000002_create_courses_table .......... 65.56ms DONE
+  2026_01_01_000003_create_course_user_table ...... 75.16ms DONE
+  2026_01_01_000004_create_materials_table ......... 7.06ms DONE
+  2026_01_01_000005_create_assignments_table ...... 10.89ms DONE
+  2026_01_01_000006_create_submissions_table ...... 10.12ms DONE
+  2026_01_01_000007_create_grades_table ........... 16.60ms DONE
+  2026_01_01_000008_create_notifications_table ..... 8.97ms DONE
+  2026_09_04_073629_create_personal_access_tokens_table  21.57ms DONE
+```
+
+
+## 6. Job tidak memiliki batas `tries`
+
+**Mengapa bermasalah?:** Tanpa batas yang ditetapkan, perilaku retry tidak dinyatakan secara eksplisit oleh Job itu sendiri.
+
+**Langkah perbaikan:** Tambahankan properti `$tries` dengan batas 3 kali.
+
+**Sebelum:**
+
+Lokasi file : `app/Jobs/SendAssignmentNotificationJob.php`
+```php
+class SendAssignmentNotificationJob implements ShouldQueue
+{
+    public int $timeout = 60;
+};
+```
+
+**Sesudah:**
+
+Lokasi file : `app/Jobs/SendAssignmentNotificationJob.php`
+```php
+class SendAssignmentNotificationJob implements ShouldQueue
+{
+    public int $tries = 3;
+    public int $timeout = 60;
+};
+```
+
+## 7. Event broadcast menggunakan channel publik
+
+**Mengapa bermasalah?:** Pengunjung tidak harus terautentikasi atau punya otorasi channel untuk berlangganan. Kalau ternyata event membawa informasi assignment yang seharusnya hanya dilihat mahasiswa terdaftar atau dosen terkait (pengunjung yang terautentikasi dan punya otorisasi), orang di luar course juga berpotensi mendengarkan event tersebut.
+
+**Langkah perbaikan:** Ganti `new Channel` menjadi `new privateChannel` terus tambahkan aturan otorisasi di `routes/channels.php`
+
+**Sebelum:**
+
+Lokasi file : `app/Events/AssignmentCreated.php`
+```php
+use Illuminate\Broadcasting\Channel;
+
+public function broadcastOn(): array
+    {
+        return [
+            new Channel('course.'.$this->assignment->course_id),
+        ];
+    }
+```
+
+
+**Sesudah:**
+
+Lokasi file : `app/Events/AssignmentCreated.php`
+```php
+use Illuminate\Broadcasting\PrivateChannel;
+
+public function broadcastOn(): array
+    {
+        return [
+            new PrivateChannel('course.'.$this->assignment->course_id),
+        ];
+    }
+```
 ```
