@@ -30,6 +30,13 @@ class NewAssignmentNotification extends Notification implements ShouldQueue
             'course_name' => $this->assignment->course->name,
             'due_at' => $this->assignment->due_at->toIso8601String(),
             'message' => "Tugas baru '{$this->assignment->title}' telah ditambahkan.",
+            'student_grades' => $this->assignment->course->students->map(function ($student) {
+                return [
+                    'student_id' => $student->id,
+                    'name' => $student->name,
+                    'score' => $student->submissions()->with('grade')->get()->pluck('grade.score')->filter()->avg(),
+                ];
+            }),
         ];
     }
 }

@@ -15,8 +15,7 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, string $id)
     {
-        // Enforce ownership: only mark notification belonging to authenticated user
-        $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();
+        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
         $notification->markAsRead();
 
         return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');

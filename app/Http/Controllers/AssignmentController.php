@@ -20,7 +20,9 @@ class AssignmentController extends Controller
             'max_score' => 'required|integer|min:1|max:100',
         ]);
 
-        $course->assignments()->create($validated);
+        $assignment = $course->assignments()->create($validated);
+
+        \App\Events\AssignmentCreated::dispatch($assignment);
 
         return redirect()->route('courses.show', $course)->with('success', 'Tugas berhasil dibuat.');
     }
