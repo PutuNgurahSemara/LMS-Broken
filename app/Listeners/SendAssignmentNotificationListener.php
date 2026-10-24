@@ -3,16 +3,13 @@
 namespace App\Listeners;
 
 use App\Events\AssignmentCreated;
-use App\Notifications\NewAssignmentNotification;
+use App\Jobs\SendAssignmentNotificationJob;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendAssignmentNotificationListener
+class SendAssignmentNotificationListener implements ShouldQueue
 {
     public function handle(AssignmentCreated $event): void
     {
-        $students = $event->assignment->course->students;
-
-        foreach ($students as $student) {
-            $student->notify(new NewAssignmentNotification($event->assignment));
-        }
+        SendAssignmentNotificationJob::dispatch($event->assignment);
     }
 }
