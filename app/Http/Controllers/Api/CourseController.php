@@ -67,6 +67,6 @@ class CourseController extends Controller
 
         $course->delete();
 
-        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 200);
+        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 204);
     }
 }
