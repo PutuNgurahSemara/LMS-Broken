@@ -4,9 +4,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->name('api.')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:60,1'])->name('api.')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+
     Route::get('/me', [AuthController::class, 'me'])->name('me');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
