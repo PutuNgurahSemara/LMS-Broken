@@ -12,9 +12,9 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        $courses = Course::where('status', 'active')->paginate(10);
-
-        return CourseResource::collection($courses);
+        return CourseResource::collection(
+            Course::with('lecturer')->withCount(['materials', 'assignments'])->paginate(10)
+        );
     }
 
     public function store(Request $request)
@@ -40,7 +40,7 @@ class CourseController extends Controller
     {
         Gate::authorize('view', $course);
 
-        return $course;
+        return response()->json(200);
     }
 
     public function update(Request $request, Course $course)
@@ -58,7 +58,7 @@ class CourseController extends Controller
 
         $course->update($validated);
 
-        return $course;
+        return response()->json(($course), 200);
     }
 
     public function destroy(Course $course)
@@ -67,6 +67,6 @@ class CourseController extends Controller
 
         $course->delete();
 
-        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 200);
+        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 204);
     }
 }
