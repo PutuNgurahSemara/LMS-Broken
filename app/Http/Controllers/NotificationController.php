@@ -8,23 +8,33 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = $request->user()->notifications()->paginate(15);
+        $notifications = $request->user()
+            ->notifications()
+            ->paginate(15);
 
         return view('notifications.index', compact('notifications'));
     }
 
     public function markAsRead(Request $request, string $id)
     {
-        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        $notification = $request->user()
+            ->notifications()
+            ->where('id', $id)
+            ->firstOrFail();
+
         $notification->markAsRead();
 
-        return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');
+        return redirect()->back()
+            ->with('success', 'Notifikasi ditandai telah dibaca.');
     }
 
     public function markAllAsRead(Request $request)
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $request->user()
+            ->unreadNotifications()
+            ->update(['read_at' => now()]);
 
-        return redirect()->back()->with('success', 'Semua notifikasi ditandai telah dibaca.');
+        return redirect()->back()
+            ->with('success', 'Semua notifikasi ditandai telah dibaca.');
     }
 }

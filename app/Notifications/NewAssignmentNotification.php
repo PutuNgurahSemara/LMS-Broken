@@ -2,19 +2,16 @@
 
 namespace App\Notifications;
 
-use App\Models\Assignment;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class NewAssignmentNotification extends Notification implements ShouldQueue
+class NewAssignmentNotification extends Notification
 {
-    use Queueable;
-
-    public int $tries = 3;
-
-    public function __construct(public Assignment $assignment)
-    {
+    public function __construct(
+        public int $assignmentId,
+        public string $title,
+        public string $courseName,
+        public string $dueAt,
+    ) {
     }
 
     public function via(object $notifiable): array
@@ -25,18 +22,11 @@ class NewAssignmentNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'assignment_id' => $this->assignment->id,
-            'title' => $this->assignment->title,
-            'course_name' => $this->assignment->course->name,
-            'due_at' => $this->assignment->due_at->toIso8601String(),
-            'message' => "Tugas baru '{$this->assignment->title}' telah ditambahkan.",
-            'student_grades' => $this->assignment->course->students->map(function ($student) {
-                return [
-                    'student_id' => $student->id,
-                    'name' => $student->name,
-                    'score' => $student->submissions()->with('grade')->get()->pluck('grade.score')->filter()->avg(),
-                ];
-            }),
+            'assignment_id' => $this->assignmentId,
+            'title' => $this->title,
+            'course_name' => $this->courseName,
+            'due_at' => $this->dueAt,
+            'message' => "Tugas baru '{$this->title}' telah ditambahkan.",
         ];
     }
 }
