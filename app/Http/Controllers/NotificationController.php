@@ -15,7 +15,11 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, string $id)
     {
-        $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        // Masalah 4
+        // $notification = \Illuminate\Notifications\DatabaseNotification::findOrFail($id);
+        // Penjelasan Masalah: Mengambil notifikasi langsung via model global DatabaseNotification tanpa validasi kepemilikan menimbulkan kerentanan IDOR. Pengguna dapat menandai notifikasi milik orang lain hanya dengan mengirim ID notifikasi target.
+        // Perbaikan:
+        $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();
         $notification->markAsRead();
 
         return redirect()->back()->with('success', 'Notifikasi ditandai telah dibaca.');
