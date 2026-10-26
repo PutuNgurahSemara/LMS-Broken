@@ -14,6 +14,8 @@ class SendAssignmentNotificationJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 3;
+    public int $backoff = 10;
     public int $timeout = 60;
 
     public function __construct(public Assignment $assignment)
@@ -24,8 +26,7 @@ class SendAssignmentNotificationJob implements ShouldQueue
     {
         $students = $this->assignment->course->students;
 
-        foreach ($students as $student) {
-            $student->notify(new NewAssignmentNotification($this->assignment));
-        }
+        // Send notifications in bulk to avoid N+1 queries
+        Notification::send($students, new NewAssignmentNotification($this->assignment));
     }
 }
