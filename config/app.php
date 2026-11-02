@@ -123,4 +123,11 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | masalah 6 Maximum Submission File Size (in KB)
+    |--------------------------------------------------------------------------
+    */
+    'max_submission_size' => (int) env('MAX_SUBMISSION_SIZE', 10240),
+
 ];

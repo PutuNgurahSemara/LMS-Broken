@@ -38,7 +38,10 @@ class CourseController extends Controller
     {
         Gate::authorize('create', Course::class);
 
-        $lecturers = User::where('role', 'dosen')->get();
+        // Masalah 3: SELECT * padahal hanya dua kolom dipakai
+        // Kesalahan: User::where('role', 'dosen')->get() mengambil seluruh kolom tabel users
+        // Perbaikan: Gunakan select('id', 'name') karena view hanya membutuhkan id dan name dosen
+        $lecturers = User::where('role', 'dosen')->select('id', 'name')->get();
 
         return view('courses.create', compact('lecturers'));
     }
@@ -65,7 +68,10 @@ class CourseController extends Controller
     {
         Gate::authorize('view', $course);
 
-        $course->load(['lecturer', 'materials']);
+        // Masalah 1: N+1 pada tiga tingkat relasi
+        // Kesalahan: Hanya me-load ['lecturer', 'materials'], sehingga saat view merender $assignment->submissions->student terjadi query N+1 pada 3 tingkat
+        // Perbaikan: Eager load relasi berjenjang hingga 3 tingkat: 'assignments.submissions.student'
+        $course->load(['lecturer', 'materials', 'assignments.submissions.student']);
 
         return view('courses.show', compact('course'));
     }
@@ -74,7 +80,10 @@ class CourseController extends Controller
     {
         Gate::authorize('update', $course);
 
-        $lecturers = User::where('role', 'dosen')->get();
+        // Masalah 3: SELECT * padahal hanya dua kolom dipakai
+        // Kesalahan: User::where('role', 'dosen')->get() mengambil seluruh kolom tabel users
+        // Perbaikan: Gunakan select('id', 'name') karena view hanya membutuhkan id dan name dosen
+        $lecturers = User::where('role', 'dosen')->select('id', 'name')->get();
 
         return view('courses.edit', compact('course', 'lecturers'));
     }

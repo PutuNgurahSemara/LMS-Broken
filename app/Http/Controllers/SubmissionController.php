@@ -23,7 +23,10 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:'.env('MAX_SUBMISSION_SIZE', 10240),
+            // Masalah 6: env() dipanggil di luar config/
+            // Kesalahan: Memanggil env('MAX_SUBMISSION_SIZE', 10240) langsung di controller. Setelah config:cache dijalankan, env() akan bernilai null sehingga validasi file rusak di server produksi.
+            // Perbaikan: Ambil konfigurasi melalui config('app.max_submission_size', 10240) yang sudah didefinisikan di config/app.php
+            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:'.config('app.max_submission_size', 10240),
         ]);
 
         $file = $request->file('file');

@@ -28,7 +28,10 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->get();
+        // Masalah 5: Seluruh data dimuat tanpa pagination
+        // Kesalahan: Menggunakan $query->get() yang memuat seluruh user ke memori tanpa batasan
+        // Perbaikan: Gunakan $query->paginate(15)->withQueryString() untuk membatasi 15 data per halaman
+        $users = $query->paginate(15)->withQueryString();
 
         return view('users.index', compact('users'));
     }
