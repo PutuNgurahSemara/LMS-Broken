@@ -7,9 +7,14 @@ use App\Models\User;
 
 class SubmissionPolicy
 {
+    // PERBAIKAN: Method before() dihapus (atau hanya return true jika role admin, selain itu null)
     public function before(User $user, string $ability): ?bool
     {
-        return true;
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return null; // Lanjutkan pengecekan ke method otorisasi spesifik
     }
 
     public function viewAny(User $user): bool

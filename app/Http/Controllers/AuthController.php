@@ -32,13 +32,10 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! User::where('email', $credentials['email'])->exists()) {
-            throw ValidationException::withMessages([
-                'email' => 'Email tidak terdaftar.',
-            ]);
-        }
-
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            // PERBAIKAN 1: Menambahkan regenerasi ID sesi untuk mencegah Session Fixation
+            $request->session()->regenerate();
+
             RateLimiter::clear($throttleKey);
 
             return redirect()->intended(route('dashboard'));
@@ -46,8 +43,9 @@ class AuthController extends Controller
 
         RateLimiter::hit($throttleKey);
 
+        // PERBAIKAN 2: Menggunakan pesan error umum untuk mencegah User Enumeration
         throw ValidationException::withMessages([
-            'email' => 'Password yang Anda masukkan salah.',
+            'email' => 'Kredensial yang diberikan tidak cocok dengan catatan kami.',
         ]);
     }
 
