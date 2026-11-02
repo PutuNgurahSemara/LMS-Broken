@@ -18,7 +18,8 @@ class CoursePolicy
             return true;
         }
 
-        return $course->students->pluck('id')->contains($user->id);
+        // PERBAIKAN: Menggunakan relasi query exists() untuk mencegah masalah N+1 Query
+        return $course->students()->where('users.id', $user->id)->exists();
     }
 
     public function create(User $user): bool

@@ -81,6 +81,9 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
+        // PERBAIKAN: Memastikan otorisasi dipanggil di level Controller sebelum update
+        Gate::authorize('update', $course);
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:20', Rule::unique('courses', 'code')->ignore($course->id)],
             'name' => 'required|string|max:255',
@@ -97,6 +100,9 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
+        // PERBAIKAN: Memastikan otorisasi dipanggil di level Controller sebelum delete
+        Gate::authorize('delete', $course);
+
         $course->delete();
 
         return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil dihapus.');

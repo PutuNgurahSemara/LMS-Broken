@@ -89,7 +89,8 @@ class UserController extends Controller
             $user->password = Hash::make($validated['password']);
         }
 
-        if ($request->has('role')) {
+        // PERBAIKAN: Hanya pengguna berpangkat Admin yang diizinkan mengubah kolom role
+        if ($request->has('role') && $request->user()->role === 'admin') {
             $request->validate(['role' => 'required|in:admin,dosen,mahasiswa']);
             $user->role = $request->role;
         }
