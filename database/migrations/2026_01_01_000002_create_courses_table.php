@@ -15,7 +15,10 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedTinyInteger('sks');
             $table->foreignId('lecturer_id')->constrained('users')->restrictOnDelete();
-            $table->enum('status', ['draft', 'active', 'archived'])->default('draft');
+            // Masalah 4: Index hilang pada kolom yang sering difilter
+            // Kesalahan: Kolom status tidak memiliki index padahal sering difilter (where('status', ...))
+            // Perbaikan: Tambahkan ->index() pada kolom status untuk mempercepat query filtering
+            $table->enum('status', ['draft', 'active', 'archived'])->default('draft')->index();
             $table->timestamps();
         });
     }

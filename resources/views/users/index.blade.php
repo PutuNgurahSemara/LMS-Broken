@@ -47,5 +47,12 @@
                 @endforeach
             </tbody>
         </table>
+
+        {{-- Masalah 5: Seluruh data dimuat tanpa pagination --}}
+        {{-- Kesalahan: Link pagination dihilangkan sehingga pengguna tidak bisa berpindah halaman --}}
+        {{-- Perbaikan: Tampilkan kembali komponen pagination link $users->links() --}}
+        <div class="px-6 py-4 border-t border-gray-100">
+            {{ $users->links() }}
+        </div>
     </div>
 </x-layout>
