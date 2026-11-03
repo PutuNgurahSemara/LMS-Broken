@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AssignmentCreated;
 use App\Models\Assignment;
 use App\Models\Course;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ class AssignmentController extends Controller
 
         $assignment = $course->assignments()->create($validated);
 
-        \App\Events\AssignmentCreated::dispatch($assignment);
+        // PERBAIKAN: Event dipanggil dengan aman (Listener asynchronous ShouldQueue & PrivateChannel)
+        AssignmentCreated::dispatch($assignment);
 
         return redirect()->route('courses.show', $course)->with('success', 'Tugas berhasil dibuat.');
     }

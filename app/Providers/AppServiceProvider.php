@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\AssignmentCreated;
+use App\Listeners\SendAssignmentNotificationListener;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,9 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\Event::listen(
-            \App\Events\AssignmentCreated::class,
-            \App\Listeners\SendAssignmentNotificationListener::class,
+        // PERBAIKAN: Impor class secara rapi dan pastikan pendengaran event mengarah ke Queue Listener
+        Event::listen(
+            AssignmentCreated::class,
+            SendAssignmentNotificationListener::class,
         );
     }
 }

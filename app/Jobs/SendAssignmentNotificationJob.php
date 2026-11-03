@@ -15,6 +15,9 @@ class SendAssignmentNotificationJob implements ShouldQueue
     use InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 60;
+    
+    // PERBAIKAN: Menambahkan batas percobaan ulang sebanyak 3 kali
+    public int $tries = 3;
 
     public function __construct(public Assignment $assignment)
     {
@@ -24,8 +27,10 @@ class SendAssignmentNotificationJob implements ShouldQueue
     {
         $students = $this->assignment->course->students;
 
-        foreach ($students as $student) {
-            $student->notify(new NewAssignmentNotification($this->assignment));
-        }
+        // PERBAIKAN: Menggunakan pengiriman batch Notification::send()
+        Notification::send(
+            $students,
+            new NewAssignmentNotification($this->assignment)
+        );
     }
 }

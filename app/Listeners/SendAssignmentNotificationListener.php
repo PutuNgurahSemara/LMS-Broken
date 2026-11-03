@@ -4,15 +4,20 @@ namespace App\Listeners;
 
 use App\Events\AssignmentCreated;
 use App\Notifications\NewAssignmentNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Notification;
 
-class SendAssignmentNotificationListener
+// PERBAIKAN: Mengimplementasikan ShouldQueue agar listener berjalan di background/queue
+class SendAssignmentNotificationListener implements ShouldQueue
 {
     public function handle(AssignmentCreated $event): void
     {
         $students = $event->assignment->course->students;
 
-        foreach ($students as $student) {
-            $student->notify(new NewAssignmentNotification($event->assignment));
-        }
+        // PERBAIKAN: Menggunakan Notification::send() secara batch
+        Notification::send(
+            $students,
+            new NewAssignmentNotification($event->assignment)
+        );
     }
 }
