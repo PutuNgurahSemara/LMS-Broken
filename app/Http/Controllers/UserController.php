@@ -14,7 +14,7 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $query = User::query();
+        $query = User::query()->select('id', 'name', 'email', 'nim_nip', 'role', 'created_at');
 
         if ($request->filled('role')) {
             $query->where('role', $request->role);
@@ -28,7 +28,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->get();
+        $users = $query->paginate(15)->withQueryString();
 
         return view('users.index', compact('users'));
     }
