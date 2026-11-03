@@ -55,4 +55,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    // Grade Recap
+    Route::get('/grade-recap', [App\Http\Controllers\GradeRecapController::class, 'index'])->name('grade-recap.index');
+    Route::get('/grade-recap/{course}', [App\Http\Controllers\GradeRecapController::class, 'show'])->name('grade-recap.show');
 });

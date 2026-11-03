@@ -65,7 +65,13 @@ class CourseController extends Controller
     {
         Gate::authorize('view', $course);
 
-        $course->load(['lecturer', 'materials']);
+        $course->load([
+            'lecturer:id,name',
+            'materials:id,course_id,title,description,type,file_path,external_url',
+            'assignments:id,course_id,title,description,due_at,max_score',
+            'assignments.submissions:id,assignment_id,user_id,original_name,submitted_at',
+            'assignments.submissions.student:id,name'
+        ]);
 
         return view('courses.show', compact('course'));
     }

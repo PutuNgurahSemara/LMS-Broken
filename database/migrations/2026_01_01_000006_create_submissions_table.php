@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('file_path')->nullable();
             $table->string('original_name')->nullable();
             $table->unsignedBigInteger('file_size')->nullable();
-            $table->enum('status', ['submitted', 'graded'])->default('submitted');
+            $table->enum('status', ['submitted', 'graded'])->default('submitted')->index();
             $table->text('notes')->nullable();
             $table->timestamp('submitted_at');
             $table->unique(['assignment_id', 'user_id']);
