@@ -12,11 +12,7 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        // Eager load lecturer & student count to prevent N+1 queries
-        $courses = Course::with('lecturer')
-            ->withCount('students')
-            ->where('status', 'active')
-            ->paginate(10);
+        $courses = Course::where('status', 'active')->paginate(10);
 
         return CourseResource::collection($courses);
     }
@@ -37,16 +33,14 @@ class CourseController extends Controller
         $course = Course::create($validated);
         $course->load('lecturer');
 
-        return (new CourseResource($course))->response()->setStatusCode(201);
+        return response()->json(new CourseResource($course), 200);
     }
 
     public function show(Course $course)
     {
         Gate::authorize('view', $course);
 
-        $course->load(['lecturer', 'materials', 'assignments']);
-
-        return new CourseResource($course);
+        return $course;
     }
 
     public function update(Request $request, Course $course)
@@ -64,7 +58,7 @@ class CourseController extends Controller
 
         $course->update($validated);
 
-        return new CourseResource($course);
+        return $course;
     }
 
     public function destroy(Course $course)
@@ -73,6 +67,6 @@ class CourseController extends Controller
 
         $course->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Mata kuliah berhasil dihapus'], 200);
     }
 }
