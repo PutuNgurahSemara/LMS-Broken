@@ -28,7 +28,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->get();
+        $users = $query->paginate(20)->withQueryString();
 
         return view('users.index', compact('users'));
     }

@@ -48,4 +48,10 @@
             </tbody>
         </table>
     </div>
+
+    @if($users->hasPages())
+    <div class="mt-4">
+        {{ $users->links() }}
+    </div>
+    @endif
 </x-layout>

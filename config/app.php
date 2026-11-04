@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | File Upload Limits
+    |--------------------------------------------------------------------------
+    | Maximum file size (in kilobytes) for submission uploads.
+    | Read via config('app.max_submission_size') — never env() directly.
+    */
+    'max_submission_size' => env('MAX_SUBMISSION_SIZE', 10240),
+
 ];

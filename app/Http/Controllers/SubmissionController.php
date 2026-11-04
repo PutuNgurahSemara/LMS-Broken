@@ -23,7 +23,7 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:'.env('MAX_SUBMISSION_SIZE', 10240),
+            'file' => 'required|file|mimes:pdf,zip,rar,docx|max:'.config('app.max_submission_size'),
         ]);
 
         $file = $request->file('file');
