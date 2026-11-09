@@ -92,3 +92,4 @@ class Week12Test extends TestCase
         $this->assertContains('.env', $lines, '.gitignore harus memuat baris .env untuk mencegah kebocoran kredensial');
     }
 }
+

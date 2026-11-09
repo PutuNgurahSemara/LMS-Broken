@@ -64,3 +64,4 @@ class EndToEndWeek12DeploymentTest extends TestCase
         $this->assertLessThan($artisanUpPos, $queueRestartPos, 'queue:restart harus dipanggil sebelum aplikasi keluar dari maintenance mode');
     }
 }
+
