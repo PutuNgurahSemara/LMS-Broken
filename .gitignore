@@ -1,10 +1,14 @@
 /.phpunit.cache
+# FIX 6: mengembalikan /node_modules agar pustaka dependency JavaScript tidak ikut ter-commit ke repo
+/node_modules
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
 /vendor
+# FIX 1: mengembalikan .env agar file kredensial sensitif lokal tidak bocor ke GIT
+.env
 .env.backup
 .env.production
 .phpactor.json

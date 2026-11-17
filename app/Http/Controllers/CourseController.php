@@ -56,7 +56,9 @@ class CourseController extends Controller
             'status' => 'required|in:draft,active,archived',
         ]);
 
-        dd('debugging payload course', $validated);
+        // FIX 5: Menghapus dd() debug yang tertinggal agar proses penyimpanan Course berjalan normal
+        // dibawah ini adalah baris kode yang dihapus
+        // dd('debugging payload course', $validated);
 
         Course::create($validated);
 
