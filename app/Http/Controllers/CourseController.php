@@ -19,7 +19,7 @@ class CourseController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%'.$request->search.'%')
-                  ->orWhere('code', 'like', '%'.$request->search.'%');
+                    ->orWhere('code', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -55,8 +55,6 @@ class CourseController extends Controller
             'lecturer_id' => 'required|exists:users,id',
             'status' => 'required|in:draft,active,archived',
         ]);
-
-        dd('debugging payload course', $validated);
 
         Course::create($validated);
 
