@@ -13,8 +13,6 @@ class SubmissionTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected static ?int $createdSubmissionId = null;
-
     public function test_mahasiswa_can_submit_assignment(): void
     {
         $mahasiswa = User::factory()->create(['role' => 'mahasiswa']);
@@ -33,26 +31,40 @@ class SubmissionTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        self::$createdSubmissionId = $submission->id;
-
         $this->assertDatabaseHas('submissions', ['id' => $submission->id]);
     }
 
     public function test_dosen_can_grade_submission(): void
     {
         $dosen = User::factory()->create(['role' => 'dosen']);
+        $mahasiswa = User::factory()->create(['role' => 'mahasiswa']);
+        $course = Course::factory()->create(['lecturer_id' => $dosen->id]);
+        $assignment = Assignment::factory()->create(['course_id' => $course->id]);
 
-        $submission = Submission::find(self::$createdSubmissionId);
+        $submission = Submission::create([
+            'assignment_id' => $assignment->id,
+            'user_id' => $mahasiswa->id,
+            'file_path' => 'submissions/w14-sample.pdf',
+            'original_name' => 'w14-tugas.pdf',
+            'file_size' => 1024,
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
 
         $response = $this->actingAs($dosen)->post('/submissions/'.$submission->id.'/grade', [
             'score' => 85,
             'feedback' => 'Bagus sekali',
         ]);
 
-        $response->assertStatus(302);
+        $response->assertRedirect();
         $this->assertDatabaseHas('grades', [
             'submission_id' => $submission->id,
             'score' => 85,
+            'feedback' => 'Bagus sekali',
+        ]);
+        $this->assertDatabaseHas('submissions', [
+            'id' => $submission->id,
+            'status' => 'graded',
         ]);
     }
 }
