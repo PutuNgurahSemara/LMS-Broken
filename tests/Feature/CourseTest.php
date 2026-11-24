@@ -14,10 +14,18 @@ class CourseTest extends TestCase
     public function test_authenticated_user_can_view_courses_list(): void
     {
         $user = User::factory()->create();
+        $course = Course::factory()->create([
+            'code' => 'W14LIST01',
+            'name' => 'Course List W14',
+            'status' => 'active',
+        ]);
 
         $response = $this->actingAs($user)->get('/courses');
 
-        $response->assertStatus(200);
+        $response->assertOk()
+            ->assertViewIs('courses.index')
+            ->assertSee($course->code)
+            ->assertSee($course->name);
     }
 
     public function test_dosen_can_create_a_course(): void
@@ -72,17 +80,35 @@ class CourseTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertStatus(302);
+        $response->assertRedirect(route('courses.show', $course));
+        $this->assertDatabaseHas('courses', [
+            'id' => $course->id,
+            'name' => 'Nama Sesudah Update',
+        ]);
     }
 
-    public function test_default_pemrograman_web_course_can_be_viewed(): void
+    public function test_enrolled_student_can_view_course_detail(): void
     {
-        $user = User::where('email', 'mahasiswa@kampuslms.test')->first();
-        $course = Course::where('code', 'SI2514024')->first();
+        $user = User::factory()->create([
+            'name' => 'Mahasiswa Course W14',
+            'role' => 'mahasiswa',
+        ]);
+        $dosen = User::factory()->create(['role' => 'dosen']);
+        $course = Course::factory()->create([
+            'code' => 'W14DETAIL01',
+            'name' => 'Course Detail W14',
+            'description' => 'Detail course untuk pengujian W14.',
+            'lecturer_id' => $dosen->id,
+        ]);
+        $course->students()->attach($user->id);
 
         $response = $this->actingAs($user)->get('/courses/'.$course->id);
 
-        $response->assertStatus(200);
+        $response->assertOk()
+            ->assertViewIs('courses.show')
+            ->assertSee($course->code)
+            ->assertSee($course->name)
+            ->assertSee($course->description);
     }
 
     public function test_mahasiswa_cannot_delete_course(): void
@@ -93,6 +119,7 @@ class CourseTest extends TestCase
 
         $response = $this->actingAs($mahasiswa)->delete('/courses/'.$course->id);
 
-        $this->assertNotEquals(200, $response->getStatusCode());
+        $response->assertForbidden();
+        $this->assertDatabaseHas('courses', ['id' => $course->id]);
     }
 }
