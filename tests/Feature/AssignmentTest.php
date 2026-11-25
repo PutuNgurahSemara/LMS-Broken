@@ -39,6 +39,10 @@ class AssignmentTest extends TestCase
 
         $response = $this->actingAs($dosen)->delete('/assignments/'.$assignment->id);
 
+        // Masalah 2: Hanya memeriksa status redirect (tanpa memeriksa database)
+        // Kesalahan: Hanya memanggil assertRedirect('/courses/...'), jika fitur delete di controller tidak menghapus tugas dari DB, test tetap hijau
+        // Perbaikan: Tambahkan assertDatabaseMissing untuk memverifikasi bahwa record tugas benar-benar terhapus dari tabel assignments
         $response->assertRedirect('/courses/'.$course->id);
+        $this->assertDatabaseMissing('assignments', ['id' => $assignment->id]);
     }
 }

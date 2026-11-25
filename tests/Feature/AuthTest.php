@@ -54,6 +54,10 @@ class AuthTest extends TestCase
 
         $response = $this->actingAs($user)->get('/dashboard');
 
-        $this->assertNotNull($response);
+        // Masalah 4: Tanpa assertion bermakna
+        // Kesalahan: Menggunakan assertNotNull($response) yang tidak bermakna karena objek $response selalu tidak null meskipun halaman crash (500) atau kosong
+        // Perbaikan: Ganti dengan assertStatus(200) dan periksa keberadaan nama user di konten halaman dashboard
+        $response->assertStatus(200);
+        $response->assertSee($user->name);
     }
 }

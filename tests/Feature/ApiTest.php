@@ -68,6 +68,10 @@ class ApiTest extends TestCase
 
         $response = $this->actingAs($dosen, 'sanctum')->deleteJson('/api/courses/'.$course->id);
 
+        // Masalah 1: Hanya memeriksa status (tanpa memeriksa database)
+        // Kesalahan: Hanya memeriksa assertStatus(204), sehingga test tetap hijau meski data di DB tidak terhapus
+        // Perbaikan: Tambahkan assertDatabaseMissing untuk memastikan data mata kuliah benar-benar terhapus dari database
         $response->assertStatus(204);
+        $this->assertDatabaseMissing('courses', ['id' => $course->id]);
     }
 }

@@ -72,17 +72,30 @@ class CourseTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertStatus(302);
+        // Masalah 3: Hanya memeriksa status 302 (tanpa memeriksa pembaruan database)
+        // Kesalahan: Hanya memeriksa assertStatus(302). Jika controller me-redirect tanpa mengupdate record di database, test tetap hijau
+        // Perbaikan: Tambahkan assertRedirect dan assertDatabaseHas untuk memastikan nama mata kuliah telah terupdate di database
+        $response->assertRedirect('/courses/'.$course->id);
+        $this->assertDatabaseHas('courses', [
+            'id' => $course->id,
+            'name' => 'Nama Sesudah Update',
+        ]);
     }
 
     public function test_default_pemrograman_web_course_can_be_viewed(): void
     {
-        $user = User::where('email', 'mahasiswa@kampuslms.test')->first();
-        $course = Course::where('code', 'SI2514024')->first();
+        // Masalah 6: Test bergantung pada seeder
+        // Kesalahan: Mengambil data dari seeder (User::where('email', ...) dan Course::where('code', ...)) yang menyebabkan test gagal saat database kosong di RefreshDatabase
+        // Perbaikan: Buat data uji sendiri secara mandiri menggunakan factory dan daftarkan mahasiswa ke mata kuliah
+        $dosen = User::factory()->create(['role' => 'dosen']);
+        $user = User::factory()->create(['role' => 'mahasiswa']);
+        $course = Course::factory()->create(['lecturer_id' => $dosen->id]);
+        $course->students()->attach($user->id);
 
         $response = $this->actingAs($user)->get('/courses/'.$course->id);
 
         $response->assertStatus(200);
+        $response->assertSee($course->name);
     }
 
     public function test_mahasiswa_cannot_delete_course(): void
@@ -93,6 +106,10 @@ class CourseTest extends TestCase
 
         $response = $this->actingAs($mahasiswa)->delete('/courses/'.$course->id);
 
-        $this->assertNotEquals(200, $response->getStatusCode());
+        // Masalah 8: Memeriksa "tidak 200" padahal seharusnya 403
+        // Kesalahan: Menggunakan assertNotEquals(200) yang longgar, sehingga jika endpoint melempar error 500 crash atau 404 test tetap hijau palsu
+        // Perbaikan: Gunakan assertStatus(403) untuk memastikan otorisasi berjalan dan assertDatabaseHas agar mata kuliah dipastikan tidak terhapus
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('courses', ['id' => $course->id]);
     }
 }
