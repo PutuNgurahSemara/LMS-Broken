@@ -56,8 +56,6 @@ class CourseController extends Controller
             'status' => 'required|in:draft,active,archived',
         ]);
 
-        dd('debugging payload course', $validated);
-
         Course::create($validated);
 
         return redirect()->route('courses.index')->with('success', 'Mata kuliah berhasil ditambahkan.');
