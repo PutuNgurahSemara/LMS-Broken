@@ -7,13 +7,13 @@ use App\Models\Course;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SubmissionTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected static ?int $createdSubmissionId = null;
 
     public function test_mahasiswa_can_submit_assignment(): void
     {
@@ -23,26 +23,42 @@ class SubmissionTest extends TestCase
         $course->students()->attach($mahasiswa->id);
         $assignment = Assignment::factory()->create(['course_id' => $course->id]);
 
-        $submission = Submission::create([
-            'assignment_id' => $assignment->id,
-            'user_id' => $mahasiswa->id,
-            'file_path' => 'submissions/sample.pdf',
-            'original_name' => 'tugas.pdf',
-            'file_size' => 1024,
-            'status' => 'submitted',
-            'submitted_at' => now(),
+        Storage::fake('local');
+
+        $response = $this->actingAs($mahasiswa)->post('/assignments/'.$assignment->id.'/submissions', [
+            'notes' => 'Berikut tugas saya.',
+            'file' => UploadedFile::fake()->create('tugas.pdf', 10, 'application/pdf'),
         ]);
 
-        self::$createdSubmissionId = $submission->id;
+        $response->assertRedirect('/courses/'.$course->id);
+        $this->assertDatabaseHas('submissions', [
+            'assignment_id' => $assignment->id,
+            'user_id' => $mahasiswa->id,
+            'original_name' => 'tugas.pdf',
+            'status' => 'submitted',
+        ]);
 
-        $this->assertDatabaseHas('submissions', ['id' => $submission->id]);
+        $submission = Submission::where('assignment_id', $assignment->id)
+            ->where('user_id', $mahasiswa->id)
+            ->firstOrFail();
+        Storage::disk('local')->assertExists($submission->file_path);
     }
 
     public function test_dosen_can_grade_submission(): void
     {
         $dosen = User::factory()->create(['role' => 'dosen']);
-
-        $submission = Submission::find(self::$createdSubmissionId);
+        $mahasiswa = User::factory()->create(['role' => 'mahasiswa']);
+        $course = Course::factory()->create(['lecturer_id' => $dosen->id]);
+        $assignment = Assignment::factory()->create(['course_id' => $course->id]);
+        $submission = Submission::create([
+            'assignment_id' => $assignment->id,
+            'user_id' => $mahasiswa->id,
+            'file_path' => 'submissions/grade-test.pdf',
+            'original_name' => 'grade-test.pdf',
+            'file_size' => 1024,
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
 
         $response = $this->actingAs($dosen)->post('/submissions/'.$submission->id.'/grade', [
             'score' => 85,
@@ -52,7 +68,13 @@ class SubmissionTest extends TestCase
         $response->assertStatus(302);
         $this->assertDatabaseHas('grades', [
             'submission_id' => $submission->id,
+            'graded_by' => $dosen->id,
             'score' => 85,
+            'feedback' => 'Bagus sekali',
+        ]);
+        $this->assertDatabaseHas('submissions', [
+            'id' => $submission->id,
+            'status' => 'graded',
         ]);
     }
 }

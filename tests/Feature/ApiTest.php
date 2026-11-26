@@ -37,12 +37,19 @@ class ApiTest extends TestCase
     public function test_authenticated_api_request_returns_course_list(): void
     {
         $user = User::factory()->create();
-        Course::factory()->create(['lecturer_id' => $user->id, 'status' => 'active']);
+        $course = Course::factory()->create([
+            'code' => 'API-LIST-101',
+            'name' => 'API Course List Test',
+            'lecturer_id' => $user->id,
+            'status' => 'active',
+        ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/courses');
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['data', 'links', 'meta']);
+            ->assertJsonStructure(['data', 'links', 'meta'])
+            ->assertJsonPath('data.0.id', $course->id)
+            ->assertJsonPath('data.0.code', 'API-LIST-101');
     }
 
     public function test_api_store_returns_201_created(): void
@@ -68,6 +75,7 @@ class ApiTest extends TestCase
 
         $response = $this->actingAs($dosen, 'sanctum')->deleteJson('/api/courses/'.$course->id);
 
-        $response->assertStatus(204);
+        $response->assertNoContent();
+        $this->assertDatabaseMissing('courses', ['id' => $course->id]);
     }
 }
