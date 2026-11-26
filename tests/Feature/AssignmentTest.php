@@ -40,5 +40,6 @@ class AssignmentTest extends TestCase
         $response = $this->actingAs($dosen)->delete('/assignments/'.$assignment->id);
 
         $response->assertRedirect('/courses/'.$course->id);
+        $this->assertDatabaseMissing('assignments', ['id' => $assignment->id]);
     }
 }
