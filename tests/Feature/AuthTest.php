@@ -13,7 +13,11 @@ class AuthTest extends TestCase
     public function test_login_screen_can_be_rendered(): void
     {
         $response = $this->get('/login');
-        $response->assertStatus(200);
+        $response->assertOk()
+            ->assertViewIs('auth.login')
+            ->assertSee('Masuk ke KampusLMS')
+            ->assertSee('name="email"', false)
+            ->assertSee('name="password"', false);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -54,6 +58,9 @@ class AuthTest extends TestCase
 
         $response = $this->actingAs($user)->get('/dashboard');
 
-        $this->assertNotNull($response);
+        $response->assertOk()
+            ->assertViewIs('dashboard.mahasiswa')
+            ->assertSee($user->name)
+            ->assertSee('Panel Pembelajaran Mahasiswa');
     }
 }
